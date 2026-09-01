@@ -3,17 +3,13 @@
 import { AlertCircle } from "lucide-react"
 import { useState } from "react"
 
-import { cn } from "@/lib/utils"
 import type { MutationResult } from "@/hooks/use-schedule"
 import type { CourseGroup } from "@/lib/schedule/courses"
-import { generateTimeOptions } from "@/lib/schedule/time"
 import type { CourseDraft, DayId, ValidationError } from "@/lib/schedule/types"
 import { errorFor } from "@/lib/schedule/validation"
 import { ColorPicker } from "./color-picker"
 import { DaySelector } from "./day-selector"
 import { ExistingCoursePicker } from "./existing-course-picker"
-
-const TIME_OPTIONS = generateTimeOptions()
 
 const fieldClass =
   "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[invalid=true]:border-destructive"
@@ -143,35 +139,27 @@ export function CourseForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Hora de inicio" htmlFor="course-start" error={errorFor(errors, "start")}>
-          <select
+          <input
             id="course-start"
+            type="text"
+            placeholder="HH:mm (ej: 13:50)"
             value={draft.start}
             onChange={(e) => set("start", e.target.value)}
             aria-invalid={Boolean(errorFor(errors, "start"))}
-            className={cn(fieldClass, "appearance-none")}
-          >
-            {TIME_OPTIONS.map((time) => (
-              <option key={time} value={time}>
-                {time}
-              </option>
-            ))}
-          </select>
+            className={fieldClass}
+          />
         </Field>
 
         <Field label="Hora de término" htmlFor="course-end" error={errorFor(errors, "end")}>
-          <select
+          <input
             id="course-end"
+            type="text"
+            placeholder="HH:mm (ej: 14:50)"
             value={draft.end}
             onChange={(e) => set("end", e.target.value)}
             aria-invalid={Boolean(errorFor(errors, "end"))}
-            className={cn(fieldClass, "appearance-none")}
-          >
-            {TIME_OPTIONS.map((time) => (
-              <option key={time} value={time}>
-                {time}
-              </option>
-            ))}
-          </select>
+            className={fieldClass}
+          />
         </Field>
       </div>
 

@@ -1,6 +1,11 @@
 import { isWithinGridBounds, timeToMinutes } from "./time"
 import type { CourseDraft, ValidationError } from "./types"
 
+/** Check if a time string is in valid HH:mm format. */
+function isValidTimeFormat(time: string): boolean {
+  return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time)
+}
+
 /**
  * Validate a course draft against the schedule rules.
  *
@@ -22,6 +27,10 @@ export function validateCourseDraft(draft: CourseDraft): ValidationError[] {
 
   if (!draft.start || !draft.end) {
     errors.push({ field: "start", message: "Define la hora de inicio y término." })
+  } else if (!isValidTimeFormat(draft.start)) {
+    errors.push({ field: "start", message: "Formato de hora inválido. Usa HH:mm (ej: 13:50)." })
+  } else if (!isValidTimeFormat(draft.end)) {
+    errors.push({ field: "end", message: "Formato de hora inválido. Usa HH:mm (ej: 14:50)." })
   } else if (timeToMinutes(draft.end) <= timeToMinutes(draft.start)) {
     errors.push({
       field: "end",

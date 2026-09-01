@@ -1,5 +1,6 @@
 "use client"
 
+import type { RefObject } from "react"
 import { useMemo } from "react"
 
 import { cn } from "@/lib/utils"
@@ -14,6 +15,7 @@ interface ScheduleGridProps {
   courses: Course[]
   onEditCourse: (course: Course) => void
   onDeleteCourse: (id: string) => void
+  gridRef?: RefObject<HTMLDivElement | null>
 }
 
 const HOUR_LABELS = generateHourLabels()
@@ -22,7 +24,7 @@ const HOUR_LABELS = generateHourLabels()
  * Renders the dynamic timetable: an hour axis on the left and one column per
  * visible day. Course blocks are positioned within each day column.
  */
-export function ScheduleGrid({ days, courses, onEditCourse, onDeleteCourse }: ScheduleGridProps) {
+export function ScheduleGrid({ days, courses, onEditCourse, onDeleteCourse, gridRef }: ScheduleGridProps) {
   const bodyHeight = gridBodyHeight()
 
   const layoutByDay = useMemo(() => {
@@ -42,7 +44,7 @@ export function ScheduleGrid({ days, courses, onEditCourse, onDeleteCourse }: Sc
   }, [days, courses])
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card">
+    <div ref={gridRef} className="overflow-x-auto rounded-xl border border-border bg-card">
       {/* min-width keeps columns usable on mobile via horizontal scroll */}
       <div className="min-w-[640px]">
         {/* Header row: day labels */}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { pickNextColor } from "@/lib/schedule/colors"
 import { DAYS, DEFAULT_DAY_IDS } from "@/lib/schedule/constants"
@@ -27,7 +27,16 @@ function createId(): string {
  * API layer later would not require touching the presentation components.
  */
 export function useSchedule(initial: Course[] = []) {
-  const [courses, setCourses] = useState<Course[]>(initial)
+  const [courses, setCourses] = useState<Course[]>(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? window.localStorage.getItem('schedule:v1') : null
+      if (!raw) return initial
+      const parsed = JSON.parse(raw) as Course[]
+      return Array.isArray(parsed) ? parsed : initial
+    } catch (e) {
+      return initial
+    }
+  })
 
   const addCourse = useCallback(
     (draft: CourseDraft): MutationResult => {
@@ -80,6 +89,10 @@ export function useSchedule(initial: Course[] = []) {
 
   const clearAll = useCallback(() => setCourses([]), [])
 
+  const restoreCourses = useCallback((nextCourses: Course[]) => {
+    setCourses(nextCourses)
+  }, [])
+
   /** Suggested color for the next new course. */
   const nextColor = useMemo(() => pickNextColor(courses), [courses])
 
@@ -95,6 +108,16 @@ export function useSchedule(initial: Course[] = []) {
     return DAYS.filter((day) => active.has(day.id))
   }, [courses])
 
+  // Persist schedule to localStorage whenever it changes.
+  useEffect(() => {
+    try {
+      const data = JSON.stringify(courses)
+      window.localStorage.setItem('schedule:v1', data)
+    } catch (e) {
+      // ignore storage errors (e.g., quota) — keep app usable
+    }
+  }, [courses])
+
   return {
     courses,
     visibleDays,
@@ -103,5 +126,6 @@ export function useSchedule(initial: Course[] = []) {
     updateCourse,
     removeCourse,
     clearAll,
+    restoreCourses,
   }
 }

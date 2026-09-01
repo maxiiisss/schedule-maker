@@ -1,7 +1,8 @@
 "use client"
 
-import { CalendarPlus, CalendarRange, Plus, Trash2 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { toPng } from "html-to-image"
+import { CalendarPlus, CalendarRange, FileJson, ImageDown, Plus, Save, Trash2, Upload } from "lucide-react"
+import { useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { useSchedule } from "@/hooks/use-schedule"
@@ -9,6 +10,7 @@ import { getCourseGroups } from "@/lib/schedule/courses"
 import type { Course, CourseDraft } from "@/lib/schedule/types"
 import { CourseDialog } from "./course-dialog"
 import { ScheduleGrid } from "./schedule-grid"
+import { Modal } from "./modal"
 
 interface DialogState {
   open: boolean
@@ -21,9 +23,21 @@ const CLOSED: DialogState = { open: false, mode: "create", editingId: null, sess
 
 /** Top-level client orchestrator for the schedule maker. */
 export function ScheduleView() {
-  const { courses, visibleDays, nextColor, addCourse, updateCourse, removeCourse, clearAll } =
-    useSchedule()
+  const {
+    courses,
+    visibleDays,
+    nextColor,
+    addCourse,
+    updateCourse,
+    removeCourse,
+    clearAll,
+    restoreCourses,
+  } = useSchedule()
   const [dialog, setDialog] = useState<DialogState>(CLOSED)
+  const [saveOpen, setSaveOpen] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
 
   const editingCourse = useMemo(
     () => courses.find((course) => course.id === dialog.editingId) ?? null,
@@ -74,6 +88,53 @@ export function ScheduleView() {
     return result
   }
 
+  // Export current schedule as a JSON file for downloading / backup.
+  const handleExport = () => {
+    try {
+      const data = JSON.stringify(courses, null, 2)
+      const blob = new Blob([data], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'horario.json'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  const handleCapture = async () => {
+    if (!gridRef.current) return
+    try {
+      const dataUrl = await toPng(gridRef.current, { pixelRatio: 2, cacheBust: true })
+      const a = document.createElement("a")
+      a.href = dataUrl
+      a.download = "horario.png"
+      a.click()
+      setSaveMessage("Captura descargada.")
+    } catch {
+      setSaveMessage("No se pudo generar la captura.")
+    }
+  }
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+
+    try {
+      const parsed: unknown = JSON.parse(await file.text())
+      if (!Array.isArray(parsed) || !parsed.every(isCourse)) throw new Error("invalid")
+      restoreCourses(parsed)
+      setSaveMessage("Horario restaurado correctamente.")
+    } catch {
+      setSaveMessage("El archivo no contiene un horario válido.")
+    }
+  }
+
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-10">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -95,11 +156,27 @@ export function ScheduleView() {
 
         <div className="flex items-center gap-2">
           {courses.length > 0 ? (
-            <Button variant="ghost" onClick={clearAll} className="h-10 px-3 text-muted-foreground">
-              <Trash2 className="size-4" />
-              Limpiar
-            </Button>
+            <>
+              <Button variant="ghost" onClick={clearAll} className="h-10 px-3 text-muted-foreground">
+                <Trash2 className="size-4" />
+                Limpiar
+              </Button>
+
+            </>
           ) : null}
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSaveMessage(null)
+              setSaveOpen(true)
+            }}
+            className="h-10 px-3"
+          >
+            <Save className="size-4" />
+            Guardar
+          </Button>
+
           <Button onClick={openCreate} className="h-10 px-4">
             <Plus className="size-4" />
             Agregar ramo
@@ -116,6 +193,7 @@ export function ScheduleView() {
         courses={courses}
         onEditCourse={openEdit}
         onDeleteCourse={removeCourse}
+        gridRef={gridRef}
       />
 
       <CourseDialog
@@ -127,7 +205,60 @@ export function ScheduleView() {
         onClose={close}
         onSubmit={handleSubmit}
       />
+
+      <input
+        ref={importInputRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={handleImport}
+        className="hidden"
+      />
+
+      <Modal
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        title="Guardar horario"
+        description="Conserva tu horario en este dispositivo o descarga una copia."
+      >
+        <div className="grid gap-3">
+          <Button variant="outline" onClick={handleCapture} className="h-12 justify-start px-4">
+            <ImageDown className="size-4" />
+            Descargar captura PNG
+          </Button>
+          <Button variant="outline" onClick={handleExport} className="h-12 justify-start px-4">
+            <FileJson className="size-4" />
+            Descargar respaldo JSON
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => importInputRef.current?.click()}
+            className="h-12 justify-start px-4"
+          >
+            <Upload className="size-4" />
+            Restaurar desde un respaldo
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            El horario se guarda automáticamente en este navegador y se recuperará al volver a abrir la página.
+          </p>
+          {saveMessage ? <p className="text-sm font-medium text-primary">{saveMessage}</p> : null}
+        </div>
+      </Modal>
     </div>
+  )
+}
+
+function isCourse(value: unknown): value is Course {
+  if (!value || typeof value !== "object") return false
+  const course = value as Partial<Course>
+  return (
+    typeof course.id === "string" &&
+    typeof course.title === "string" &&
+    typeof course.room === "string" &&
+    typeof course.start === "string" &&
+    typeof course.end === "string" &&
+    typeof course.colorId === "string" &&
+    Array.isArray(course.days) &&
+    course.days.every((day) => typeof day === "string")
   )
 }
 
