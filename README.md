@@ -1,6 +1,6 @@
-# Creador de Horarios Universitarios
+# ScheduleGrid
 
-Una aplicación web para crear, organizar y gestionar horarios universitarios de forma interactiva. Diseñada con una interfaz intuitiva que permite visualizar conflictos de horarios y exportar tu calendario en múltiples formatos.
+Una aplicación web moderna para crear, organizar y gestionar horarios universitarios de forma interactiva e intuitiva. Diseñada con una interfaz intuitiva que permite visualizar conflictos de horarios y exportar tu calendario en múltiples formatos.
 
 ## ✨ Características
 

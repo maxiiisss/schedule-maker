@@ -144,7 +144,7 @@ export function ScheduleView() {
           </span>
           <div>
             <h1 className="font-heading text-2xl font-bold tracking-tight text-balance">
-              Creador de Horarios
+              ScheduleGrid
             </h1>
             <p className="text-sm text-muted-foreground">
               {courses.length === 0

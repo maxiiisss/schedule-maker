@@ -16,27 +16,11 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: 'Creador de Horarios Universitarios',
+  title: 'ScheduleGrid - Planificador de Horarios',
   description:
-    'Crea y organiza tu horario universitario con una grilla dinámica, detección de choques y colores automáticos.',
+    'Crea y organiza tu horario universitario con una grilla dinámica, gestión eficiente y colores automáticos.',
   generator: 'v0.app',
-  icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
-  },
+  icons: '📅',
 }
 
 export const viewport: Viewport = {
