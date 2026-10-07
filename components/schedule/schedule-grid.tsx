@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { END_HOUR, HOUR_HEIGHT, START_HOUR } from "@/lib/schedule/constants"
 import { layoutOverlappingBlocks } from "@/lib/schedule/layout"
 import { generateHourLabels, gridBodyHeight } from "@/lib/schedule/time"
+import type { FreeSlot, GridCourse } from "@/lib/schedule/compare"
 import type { Course, Day, DayId } from "@/lib/schedule/types"
 import { CourseBlock } from "./course-block"
 
@@ -19,7 +20,11 @@ export interface NowMarker {
 
 interface ScheduleGridProps {
   days: Day[]
-  courses: Course[]
+  courses: GridCourse[]
+  /** Stretches when everyone being compared is free; drawn behind the blocks. */
+  freeSlots?: FreeSlot[]
+  /** Several schedules overlaid: columns get wider and the grid scrolls sideways if needed. */
+  crowded?: boolean
   /** Lower-cased ramo title to spotlight; other blocks are dimmed. */
   focusKey: string | null
   now: NowMarker | null
@@ -34,6 +39,7 @@ const HOUR_LABELS = generateHourLabels().slice(0, -1)
 const AXIS_WIDTH = 52
 /** Narrowest a day column may get before the grid scrolls sideways. */
 const MIN_COLUMN_WIDTH = 112
+const MIN_CROWDED_COLUMN_WIDTH = 176
 
 /**
  * Timetable: an hour axis on the left and one column per visible day.
@@ -42,6 +48,8 @@ const MIN_COLUMN_WIDTH = 112
 export function ScheduleGrid({
   days,
   courses,
+  freeSlots,
+  crowded = false,
   focusKey,
   now,
   onEditCourse,
@@ -75,7 +83,11 @@ export function ScheduleGrid({
         <div
           ref={gridRef}
           className="bg-card"
-          style={{ minWidth: AXIS_WIDTH + days.length * (days.length > 1 ? MIN_COLUMN_WIDTH : 0) }}
+          style={{
+            minWidth:
+              AXIS_WIDTH +
+              days.length * (days.length > 1 ? (crowded ? MIN_CROWDED_COLUMN_WIDTH : MIN_COLUMN_WIDTH) : 0),
+          }}
         >
           <div
             className="grid border-b border-border bg-white/[0.025]"
@@ -137,6 +149,23 @@ export function ScheduleGrid({
                     backgroundSize: `100% ${HOUR_HEIGHT}px`,
                   }}
                 >
+                  {freeSlots
+                    ?.filter((slot) => slot.day === day.id)
+                    .map((slot) => {
+                      const top = ((slot.start - START_HOUR * 60) / 60) * HOUR_HEIGHT
+                      const height = ((slot.end - slot.start) / 60) * HOUR_HEIGHT
+                      return (
+                        <div
+                          key={`free-${slot.start}`}
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-1 rounded-md border border-dashed border-sky/40 bg-sky/[0.09] px-2 py-1 text-[11px] font-medium text-sky/90"
+                          style={{ top: top + 1, height: height - 2 }}
+                        >
+                          {height >= 28 ? "Libres" : null}
+                        </div>
+                      )
+                    })}
+
                   {dayCourses.map((course) => (
                     <CourseBlock
                       key={`${day.id}-${course.id}`}

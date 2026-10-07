@@ -34,7 +34,7 @@ export default async function SharedSchedulePage({ params }: PageProps) {
 
   return (
     <main className="min-h-svh bg-background">
-      <SharedScheduleView name={shared.name} courses={shared.courses} />
+      <SharedScheduleView shareId={id} name={shared.name} courses={shared.courses} />
     </main>
   )
 }
