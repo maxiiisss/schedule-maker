@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { DayTabs } from "@/components/schedule/day-tabs"
 import { ScheduleGrid, type NowMarker } from "@/components/schedule/schedule-grid"
@@ -14,10 +14,20 @@ import { useViewState } from "@/hooks/use-view-state"
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { MAX_PEOPLE } from "@/lib/schedule/compare"
 import { dayIdFromDate, weekViewDays } from "@/lib/schedule/days"
+import { mergeCourses } from "@/lib/schedule/merge"
 import { readPeople, withPerson, writePeople } from "@/lib/schedule/people"
+import { FLASH_STORAGE_KEY, SCHEDULE_STORAGE_KEY } from "@/lib/schedule/storage-keys"
 import type { Course, DayId } from "@/lib/schedule/types"
 
-const SCHEDULE_STORAGE_KEY = "schedule:v1"
+function readOwnCourses(): Course[] {
+  try {
+    const raw = window.localStorage.getItem(SCHEDULE_STORAGE_KEY)
+    const parsed = raw ? (JSON.parse(raw) as unknown) : []
+    return Array.isArray(parsed) ? (parsed as Course[]) : []
+  } catch {
+    return []
+  }
+}
 
 interface SharedScheduleViewProps {
   /** Id in the share link, used to avoid adding the same schedule twice. */
@@ -33,6 +43,12 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
   const nowDate = useNow()
   const [confirming, setConfirming] = useState(false)
   const [compareMessage, setCompareMessage] = useState<string | null>(null)
+  const [hasOwn, setHasOwn] = useState(false)
+
+  // Read after mount so the server and client markup match.
+  useEffect(() => {
+    setHasOwn(readOwnCourses().length > 0)
+  }, [])
 
   const days = useMemo(
     () => (mode === "day" ? [DAY_BY_ID[selectedDay]] : weekViewDays(courses, false)),
@@ -51,18 +67,35 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
     [nowDate],
   )
 
-  const copyToMine = () => {
+  /** Add these courses to the user's schedule, keeping everything already there. */
+  const addToMine = () => {
+    const result = mergeCourses(readOwnCourses(), courses)
     try {
-      const raw = window.localStorage.getItem(SCHEDULE_STORAGE_KEY)
-      const existing = raw ? (JSON.parse(raw) as unknown) : []
-      const hasOwn = Array.isArray(existing) && existing.length > 0
-      if (hasOwn && !confirming) {
-        setConfirming(true)
-        return
-      }
-      window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(courses))
+      window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(result.courses))
+      window.sessionStorage.setItem(
+        FLASH_STORAGE_KEY,
+        result.added === 0
+          ? "Ese horario ya estaba en el tuyo: no se agregó nada."
+          : `Se ${result.added === 1 ? "agregó 1 ramo" : `agregaron ${result.added} ramos`} a tu horario${result.skipped > 0 ? ` (${result.skipped} ya ${result.skipped === 1 ? "estaba" : "estaban"})` : ""}.`,
+      )
     } catch {
-      // storage unavailable: there is nowhere to copy the schedule into
+      setCompareMessage("No se pudo guardar en este navegador. Revisa que el almacenamiento esté permitido.")
+      return
+    }
+    router.push("/")
+  }
+
+  /** Replace the user's schedule with this one, after confirming. */
+  const replaceMine = () => {
+    if (hasOwn && !confirming) {
+      setConfirming(true)
+      return
+    }
+    try {
+      window.localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(courses))
+      window.sessionStorage.setItem(FLASH_STORAGE_KEY, "Tu horario fue reemplazado.")
+    } catch {
+      setCompareMessage("No se pudo guardar en este navegador. Revisa que el almacenamiento esté permitido.")
       return
     }
     router.push("/")
@@ -109,7 +142,7 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
           ]}
         />
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex w-full flex-wrap items-center gap-1.5 sm:w-auto">
           {confirming ? (
             <>
               <span className="hidden text-[13px] text-muted-foreground sm:inline">
@@ -118,23 +151,28 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
               <Button variant="ghost" onClick={() => setConfirming(false)} className="h-9 px-3">
                 Cancelar
               </Button>
-              <Button onClick={copyToMine} className="h-9 px-3.5">
+              <Button onClick={replaceMine} className="h-9 px-3.5">
                 Reemplazar
               </Button>
             </>
           ) : (
             <>
-              <Button onClick={addToCompare} className="h-9 px-3.5">
+              <Button onClick={addToMine} className="h-9 px-3.5">
+                Agregar a mi horario
+              </Button>
+              <Button variant="outline" onClick={addToCompare} className="h-9 px-3.5">
                 Comparar con el mío
               </Button>
-              <Button variant="outline" onClick={copyToMine} className="h-9 px-3.5">
-                Usar como mi horario
-              </Button>
+              {hasOwn ? (
+                <Button variant="ghost" onClick={replaceMine} className="h-9 px-3">
+                  Reemplazar el mío
+                </Button>
+              ) : null}
               <Link
                 href="/"
                 className="inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
-                Crear el mío
+                {hasOwn ? "Ir a mi horario" : "Crear el mío"}
               </Link>
             </>
           )}

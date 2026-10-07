@@ -138,6 +138,9 @@ export function SharePanel({ courses }: SharePanelProps) {
           </div>
 
           <p className="text-xs text-muted-foreground text-pretty">
+            Para llevar tu horario a otro dispositivo, abre este enlace allá y pulsa «Agregar a mi horario».
+          </p>
+          <p className="text-xs text-muted-foreground text-pretty">
             El enlace muestra el horario tal como estaba al crearlo ({new Date(share.createdAt).toLocaleDateString("es")}).
             Si lo cambias, crea un enlace nuevo: el anterior dejará de funcionar.
           </p>
