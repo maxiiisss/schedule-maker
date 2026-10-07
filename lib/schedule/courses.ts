@@ -1,3 +1,4 @@
+import { durationMinutes } from "./time"
 import type { Course } from "./types"
 
 /**
@@ -7,6 +8,10 @@ import type { Course } from "./types"
 export interface CourseGroup {
   title: string
   colorId: string
+  /** Lower-cased title, used as a stable key. */
+  key: string
+  /** Weekly minutes across every block and day of this ramo. */
+  minutes: number
 }
 
 /**
@@ -18,11 +23,20 @@ export function getCourseGroups(courses: Course[]): CourseGroup[] {
 
   for (const course of courses) {
     const normalized = course.title.trim().toLowerCase()
-    if (normalized.length === 0 || seen.has(normalized)) continue
+    if (normalized.length === 0) continue
+
+    const weekly = durationMinutes(course.start, course.end) * course.days.length
+    const group = seen.get(normalized)
+    if (group) {
+      group.minutes += weekly
+      continue
+    }
 
     seen.set(normalized, {
       title: course.title.trim(),
       colorId: course.colorId,
+      key: normalized,
+      minutes: weekly,
     })
   }
 

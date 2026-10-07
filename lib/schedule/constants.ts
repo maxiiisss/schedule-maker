@@ -28,25 +28,26 @@ export const START_HOUR = 8
 export const END_HOUR = 22
 
 /** Pixel height of a single hour row. Drives block sizing/positioning. */
-export const HOUR_HEIGHT = 64
+export const HOUR_HEIGHT = 56
 
 /** Snap increment for the time selects, in minutes. */
 export const TIME_STEP_MINUTES = 15
 
 /**
- * Harmonious palette assigned to courses. Colors are chosen to stay
- * distinguishable and legible over both light and dark backgrounds
- * (blocks render the hex at low alpha with a solid accent bar).
+ * Course palette: macOS system colors tuned for dark surfaces. Ids from the
+ * previous palette are kept so schedules saved in localStorage keep their color.
+ * Blocks render the hex at low alpha with a solid accent bar.
  */
 export const COURSE_COLORS: CourseColor[] = [
-  { id: "indigo", label: "Índigo", hex: "#6366f1" },
-  { id: "sky", label: "Celeste", hex: "#0ea5e9" },
-  { id: "emerald", label: "Esmeralda", hex: "#10b981" },
-  { id: "amber", label: "Ámbar", hex: "#f59e0b" },
-  { id: "rose", label: "Rosa", hex: "#f43f5e" },
-  { id: "violet", label: "Violeta", hex: "#8b5cf6" },
-  { id: "teal", label: "Turquesa", hex: "#14b8a6" },
-  { id: "orange", label: "Naranjo", hex: "#f97316" },
+  { id: "blue", label: "Azul", hex: "#0a84ff" },
+  { id: "sky", label: "Celeste", hex: "#64d2ff" },
+  { id: "indigo", label: "Índigo", hex: "#5e5ce6" },
+  { id: "teal", label: "Menta", hex: "#63e6e2" },
+  { id: "emerald", label: "Verde", hex: "#30d158" },
+  { id: "amber", label: "Ámbar", hex: "#ffd60a" },
+  { id: "orange", label: "Naranja", hex: "#ff9f0a" },
+  { id: "rose", label: "Rosa", hex: "#ff375f" },
+  { id: "violet", label: "Violeta", hex: "#bf5af2" },
 ]
 
 export const COLOR_BY_ID: Record<string, CourseColor> = COURSE_COLORS.reduce(

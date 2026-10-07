@@ -18,6 +18,8 @@ interface CourseDialogProps {
   existingGroups?: CourseGroup[]
   onClose: () => void
   onSubmit: (draft: CourseDraft) => MutationResult
+  /** Only used when editing: removes the block being edited. */
+  onDelete?: () => void
 }
 
 /** Modal shell for creating or editing a course. */
@@ -29,6 +31,7 @@ export function CourseDialog({
   existingGroups = [],
   onClose,
   onSubmit,
+  onDelete,
 }: CourseDialogProps) {
   const isEdit = mode === "edit"
 
@@ -39,17 +42,27 @@ export function CourseDialog({
       title={isEdit ? "Editar ramo" : "Agregar ramo"}
       description={
         isEdit
-          ? "Modifica los datos del bloque en tu horario."
+          ? "Cambia el horario, la sala o el color de este bloque."
           : existingGroups.length > 0
             ? "Agrega un ramo nuevo o un horario adicional a uno existente."
             : "Completa los datos para agregar un nuevo bloque a tu horario."
       }
       footer={
-        <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" onClick={onClose} className="h-10 px-4">
+        <div className="flex items-center justify-end gap-2">
+          {isEdit && onDelete ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onDelete}
+              className="mr-auto h-9 px-3 text-destructive hover:text-destructive"
+            >
+              Eliminar
+            </Button>
+          ) : null}
+          <Button type="button" variant="outline" onClick={onClose} className="h-9 px-4">
             Cancelar
           </Button>
-          <Button type="submit" form={FORM_ID} className="h-10 px-4">
+          <Button type="submit" form={FORM_ID} className="h-9 px-4">
             {isEdit ? "Guardar cambios" : "Agregar ramo"}
           </Button>
         </div>
