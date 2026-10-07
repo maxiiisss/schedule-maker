@@ -5,6 +5,7 @@ import { CalendarPlus, FileJson, ImageDown, Plus, Save, Trash2, Upload } from "l
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { SharePanel } from "@/components/share/share-panel"
 import { useNow } from "@/hooks/use-now"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useViewState } from "@/hooks/use-view-state"
@@ -351,6 +352,9 @@ export function ScheduleView() {
               {saveMessage}
             </p>
           ) : null}
+          <div className="mt-2">
+            <SharePanel courses={courses} />
+          </div>
         </div>
       </Modal>
 

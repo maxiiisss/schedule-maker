@@ -14,8 +14,10 @@ interface CourseBlockProps {
   layout: BlockLayout
   /** "dimmed" fades the block while another ramo is spotlighted. */
   state: "normal" | "focused" | "dimmed"
-  onEdit: (course: Course) => void
-  onDelete: (id: string) => void
+  onEdit?: (course: Course) => void
+  onDelete?: (id: string) => void
+  /** Shared schedules are view-only: no editing and no delete button. */
+  readOnly?: boolean
 }
 
 const HORIZONTAL_INSET = 3
@@ -24,7 +26,15 @@ const HORIZONTAL_INSET = 3
  * A single course rendered as an absolutely-positioned block inside a day
  * column. Position and height come from times; width/column from overlap layout.
  */
-export function CourseBlock({ course, dayLabel, layout, state, onEdit, onDelete }: CourseBlockProps) {
+export function CourseBlock({
+  course,
+  dayLabel,
+  layout,
+  state,
+  onEdit,
+  onDelete,
+  readOnly = false,
+}: CourseBlockProps) {
   const color = resolveColor(course.colorId)
   const styles = colorStyles(color.hex)
   const top = offsetForTime(course.start)
@@ -38,17 +48,21 @@ export function CourseBlock({ course, dayLabel, layout, state, onEdit, onDelete 
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-label={`${course.title}, ${dayLabel} de ${course.start} a ${course.end}${course.room ? `, ${course.room}` : ""}. Editar`}
-      onClick={() => onEdit(course)}
-      onKeyDown={(e) => {
-        if (e.target !== e.currentTarget) return
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          onEdit(course)
-        }
-      }}
+      role={readOnly ? "group" : "button"}
+      tabIndex={readOnly ? undefined : 0}
+      aria-label={`${course.title}, ${dayLabel} de ${course.start} a ${course.end}${course.room ? `, ${course.room}` : ""}${readOnly ? "" : ". Editar"}`}
+      onClick={readOnly ? undefined : () => onEdit?.(course)}
+      onKeyDown={
+        readOnly
+          ? undefined
+          : (e) => {
+              if (e.target !== e.currentTarget) return
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                onEdit?.(course)
+              }
+            }
+      }
       style={{
         top: top + 1,
         left,
@@ -81,17 +95,19 @@ export function CourseBlock({ course, dayLabel, layout, state, onEdit, onDelete 
         </p>
       ) : null}
 
-      <button
-        type="button"
-        aria-label={`Eliminar ${course.title}`}
-        onClick={(e) => {
-          e.stopPropagation()
-          onDelete(course.id)
-        }}
-        className="absolute right-1 top-1 hidden size-[18px] place-items-center rounded bg-black/40 text-white transition-colors hover:bg-destructive focus-visible:outline-2 focus-visible:outline-ring group-focus-within:grid [@media(hover:hover)]:group-hover:grid"
-      >
-        <X className="size-3" />
-      </button>
+      {readOnly ? null : (
+        <button
+          type="button"
+          aria-label={`Eliminar ${course.title}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete?.(course.id)
+          }}
+          className="absolute right-1 top-1 hidden size-[18px] place-items-center rounded bg-black/40 text-white transition-colors hover:bg-destructive focus-visible:outline-2 focus-visible:outline-ring group-focus-within:grid [@media(hover:hover)]:group-hover:grid"
+        >
+          <X className="size-3" />
+        </button>
+      )}
     </div>
   )
 }
