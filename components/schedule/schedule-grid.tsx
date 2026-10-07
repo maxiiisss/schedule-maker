@@ -105,12 +105,9 @@ export function ScheduleGrid({
                   )}
                 >
                   <span>{day.label}</span>
-                  {isToday && now ? (
-                    <span
-                      aria-label="hoy"
-                      className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
-                    >
-                      {now.date}
+                  {isToday ? (
+                    <span className="grid h-[22px] place-items-center rounded-full bg-primary px-2 text-xs font-semibold text-primary-foreground">
+                      Hoy
                     </span>
                   ) : null}
                 </div>

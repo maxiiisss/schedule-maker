@@ -15,7 +15,7 @@ export function Toast({ message, actionLabel, onAction }: ToastProps) {
       role="status"
       aria-live="polite"
       className={cn(
-        "pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex justify-center px-4 transition-all duration-200",
+        "pointer-events-none fixed inset-x-0 bottom-24 z-[60] sm:bottom-4 flex justify-center px-4 transition-all duration-200",
         message ? "translate-y-0 opacity-100" : "translate-y-3 opacity-0",
       )}
     >
