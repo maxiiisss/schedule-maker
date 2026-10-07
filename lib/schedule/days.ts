@@ -21,3 +21,27 @@ export function weekViewDays(courses: Course[], includeWeekend: boolean): Day[] 
   const showWeekend = includeWeekend || hasWeekendCourses(courses)
   return DAYS.filter((day) => showWeekend || !day.weekend)
 }
+
+/** Date of `dayId` in the Monday-first week that contains `reference`. */
+export function dateForDay(dayId: DayId, reference: Date): Date {
+  const index = DAYS.findIndex((day) => day.id === dayId)
+  const monday = new Date(reference)
+  monday.setHours(0, 0, 0, 0)
+  monday.setDate(monday.getDate() - ((reference.getDay() + 6) % 7))
+  monday.setDate(monday.getDate() + index)
+  return monday
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** "Octubre 2026" */
+export function formatMonthYear(date: Date): string {
+  return capitalize(date.toLocaleDateString("es", { month: "long", year: "numeric" }))
+}
+
+/** "Miércoles 7 de octubre" */
+export function formatDayTitle(date: Date): string {
+  return capitalize(date.toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" }))
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import { toPng } from "html-to-image"
-import { CalendarPlus, FileJson, ImageDown, Plus, Save, Share2, Trash2, Upload, Users } from "lucide-react"
+import { CalendarCheck, CalendarPlus, FileJson, ImageDown, Plus, Save, Share2, Trash2, Upload, Users } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { CompareBar } from "@/components/compare/compare-bar"
@@ -15,17 +15,26 @@ import { useViewState } from "@/hooks/use-view-state"
 import { bestFreeSlot, buildComparison, commonFreeSlots, MAX_PEOPLE } from "@/lib/schedule/compare"
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { getCourseGroups } from "@/lib/schedule/courses"
-import { dayIdFromDate, hasWeekendCourses, weekViewDays } from "@/lib/schedule/days"
+import {
+  dateForDay,
+  dayIdFromDate,
+  formatDayTitle,
+  formatMonthYear,
+  hasWeekendCourses,
+  weekViewDays,
+} from "@/lib/schedule/days"
 import { FLASH_STORAGE_KEY } from "@/lib/schedule/storage-keys"
 import type { Course, CourseDraft, DayId } from "@/lib/schedule/types"
 import { fetchShared, parseShareId } from "@/lib/share/client"
 import { CourseDialog } from "./course-dialog"
 import { DayTabs } from "./day-tabs"
 import { Modal } from "./modal"
+import { MobileActionBar, MobileFab } from "./mobile-bar"
 import { ScheduleGrid, type NowMarker } from "./schedule-grid"
 import { CourseChips, Logo, ScheduleSidebar } from "./schedule-sidebar"
 import { Segmented } from "./segmented"
 import { Toast } from "./toast"
+import { WeekStrip } from "./week-strip"
 
 interface DialogState {
   open: boolean
@@ -304,12 +313,57 @@ export function ScheduleView() {
   const weekendLocked = hasWeekendCourses(gridCourses)
   const todayId = now?.dayId ?? null
 
+  // Phone header: month of the shown day, and the full date under the week strip.
+  const selectedDate = nowDate ? dateForDay(selectedDay, nowDate) : null
+  const mobileTitle =
+    mode === "day" && selectedDate
+      ? formatMonthYear(selectedDate)
+      : nowDate
+        ? formatMonthYear(nowDate)
+        : "ScheduleGrid"
+
+  const goToday = () => {
+    if (todayId) setSelectedDay(todayId)
+    setMode("day")
+  }
+
   return (
     <div className="min-h-svh lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
       <ScheduleSidebar groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
       <div className="flex min-w-0 flex-col">
-        <header className="sticky top-0 z-30 border-b border-border bg-sidebar/80 px-3 py-3 backdrop-blur-xl backdrop-saturate-150 sm:px-5">
+        {/* Phones: slim bar with the month and a week strip, like Google Calendar and Calendar on iPhone. */}
+        <div className="sticky top-0 z-30 border-b border-border bg-sidebar/85 backdrop-blur-xl backdrop-saturate-150 sm:hidden">
+          <div className="flex items-center gap-2.5 px-4 pb-1.5 pt-3">
+            <Logo className="size-8" />
+            <h1 className="min-w-0 flex-1 truncate text-[19px] font-semibold tracking-tight">{mobileTitle}</h1>
+            <Segmented
+              label="Vista"
+              value={mode}
+              onChange={setMode}
+              options={[
+                { value: "day", label: "Día" },
+                { value: "week", label: "Semana" },
+              ]}
+            />
+          </div>
+          {mode === "day" ? (
+            <>
+              <WeekStrip
+                selected={selectedDay}
+                today={todayId}
+                reference={nowDate}
+                busy={busyDays}
+                onSelect={setSelectedDay}
+              />
+              <p className="px-4 pb-2.5 text-[13px] font-medium text-muted-foreground">
+                {selectedDate ? formatDayTitle(selectedDate) : DAY_BY_ID[selectedDay].label}
+              </p>
+            </>
+          ) : null}
+        </div>
+
+        <header className="sticky top-0 z-30 hidden border-b border-border bg-sidebar/80 px-3 py-3 backdrop-blur-xl backdrop-saturate-150 sm:block sm:px-5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5 xl:flex-nowrap">
             <div className="order-1 flex min-w-0 flex-1 items-center gap-2.5">
               <Logo className="lg:hidden" />
@@ -418,21 +472,29 @@ export function ScheduleView() {
 
         <CourseChips groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
-        <div className="flex flex-col gap-3 px-3 py-3 sm:px-5 sm:py-5">
-          {ready && courses.length === 0 ? <EmptyState onAdd={openCreate} /> : null}
+        <div className="flex flex-col gap-3 pb-28 sm:px-5 sm:py-5 sm:pb-5 max-sm:pt-3">
+          {ready && courses.length === 0 ? (
+            <div className="max-sm:px-3">
+              <EmptyState onAdd={openCreate} />
+            </div>
+          ) : null}
 
           {people.length > 0 ? (
-            <CompareBar
-              people={people}
-              showFree={showFree}
-              onShowFreeChange={setShowFree}
-              bestSlot={freeSlots ? bestFreeSlot(freeSlots) : null}
-              onManage={() => setCompareOpen(true)}
-            />
+            <div className="max-sm:px-3">
+              <CompareBar
+                people={people}
+                showFree={showFree}
+                onShowFreeChange={setShowFree}
+                bestSlot={freeSlots ? bestFreeSlot(freeSlots) : null}
+                onManage={() => setCompareOpen(true)}
+              />
+            </div>
           ) : null}
 
           {mode === "day" ? (
-            <DayTabs selected={selectedDay} today={todayId} busy={busyDays} onSelect={setSelectedDay} />
+            <div className="hidden sm:block">
+              <DayTabs selected={selectedDay} today={todayId} busy={busyDays} onSelect={setSelectedDay} />
+            </div>
           ) : null}
 
           <ScheduleGrid
@@ -499,6 +561,19 @@ export function ScheduleView() {
             <Upload className="size-4" />
             Restaurar desde un respaldo
           </Button>
+          {courses.length > 0 ? (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSaveOpen(false)
+                handleClear()
+              }}
+              className="h-10 justify-start px-3.5 text-destructive hover:text-destructive sm:hidden"
+            >
+              <Trash2 className="size-4" />
+              Limpiar horario
+            </Button>
+          ) : null}
           <p className="mt-2 text-[13px] text-muted-foreground text-pretty">
             El horario se guarda automáticamente en este navegador y se recuperará al volver a abrir la página.
           </p>
@@ -528,6 +603,23 @@ export function ScheduleView() {
       >
         <SharePanel courses={courses} />
       </Modal>
+
+      <MobileActionBar
+        items={[
+          { label: "Hoy", icon: CalendarCheck, onClick: goToday },
+          { label: "Comparar", icon: Users, onClick: () => setCompareOpen(true), badge: visiblePeople.length, accent: true },
+          { label: "Compartir", icon: Share2, onClick: () => setShareOpen(true), accent: true },
+          {
+            label: "Guardar",
+            icon: Save,
+            onClick: () => {
+              setSaveMessage(null)
+              setSaveOpen(true)
+            },
+          },
+        ]}
+      />
+      <MobileFab label="Agregar ramo" onClick={openCreate} />
 
       <Toast
         message={toast?.message ?? null}

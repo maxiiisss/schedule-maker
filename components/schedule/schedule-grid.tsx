@@ -77,7 +77,7 @@ export function ScheduleGrid({
   }, [days, courses])
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
+    <div className="overflow-hidden border-border bg-card max-sm:border-y sm:rounded-xl sm:border">
       <div className="overflow-x-auto overscroll-x-contain">
         {/* The ref sits on the full-width content so image capture includes every column. */}
         <div
@@ -90,10 +90,13 @@ export function ScheduleGrid({
           }}
         >
           <div
-            className="grid border-b border-border bg-white/[0.025]"
+            className={cn(
+              "grid border-b border-border bg-white/[0.025]",
+              days.length === 1 && "max-sm:hidden",
+            )}
             style={{ gridTemplateColumns: columns }}
           >
-            <div aria-hidden />
+            <div aria-hidden className="sticky left-0 z-20 bg-card" />
             {days.map((day) => {
               const isToday = now?.dayId === day.id
               return (
@@ -105,12 +108,9 @@ export function ScheduleGrid({
                   )}
                 >
                   <span>{day.label}</span>
-                  {isToday && now ? (
-                    <span
-                      aria-label="hoy"
-                      className="grid h-[22px] min-w-[22px] place-items-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground"
-                    >
-                      {now.date}
+                  {isToday ? (
+                    <span className="grid h-[22px] place-items-center rounded-full bg-primary px-2 text-xs font-semibold text-primary-foreground">
+                      Hoy
                     </span>
                   ) : null}
                 </div>
@@ -119,7 +119,7 @@ export function ScheduleGrid({
           </div>
 
           <div className="relative grid" style={{ gridTemplateColumns: columns, height: bodyHeight }}>
-            <div aria-hidden>
+            <div aria-hidden className="sticky left-0 z-20 bg-card">
               {HOUR_LABELS.map((label, index) => (
                 <div key={label} style={{ height: HOUR_HEIGHT }} className="relative">
                   {index > 0 ? (
@@ -182,6 +182,7 @@ export function ScheduleGrid({
                       onEdit={onEditCourse}
                       onDelete={onDeleteCourse}
                       readOnly={readOnly}
+                      large={days.length === 1}
                     />
                   ))}
 
@@ -201,7 +202,7 @@ export function ScheduleGrid({
             {nowOffset !== null && now ? (
               <span
                 aria-hidden
-                className="pointer-events-none absolute left-0.5 z-10 rounded bg-sky px-1 text-[10.5px] font-semibold leading-4 text-[#06222e] tabular-nums"
+                className="pointer-events-none absolute left-0.5 z-30 rounded bg-sky px-1 text-[10.5px] font-semibold leading-4 text-[#06222e] tabular-nums"
                 style={{ top: nowOffset - 8 }}
               >
                 {String(Math.floor(now.minutes / 60)).padStart(2, "0")}:{String(now.minutes % 60).padStart(2, "0")}

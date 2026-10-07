@@ -19,6 +19,8 @@ interface CourseBlockProps {
   onDelete?: (id: string) => void
   /** Shared schedules are view-only: no editing and no delete button. */
   readOnly?: boolean
+  /** Single wide column (day view): larger text, easier to read on a phone. */
+  large?: boolean
 }
 
 const HORIZONTAL_INSET = 3
@@ -35,6 +37,7 @@ export function CourseBlock({
   onEdit,
   onDelete,
   readOnly: readOnlyProp = false,
+  large = false,
 }: CourseBlockProps) {
   // Blocks that belong to someone else are always view-only.
   const readOnly = readOnlyProp || Boolean(course.readOnly)
@@ -83,20 +86,30 @@ export function CourseBlock({
         state === "focused" && "ring-1 ring-white/50",
       )}
     >
-      <p className="truncate pr-4 text-[12.5px] font-semibold leading-tight" title={course.title}>
+      <p
+        className={cn("truncate pr-4 font-semibold leading-tight", large ? "text-[15px]" : "text-[12.5px]")}
+        title={course.title}
+      >
         {course.title}
       </p>
 
       {course.owner && height >= 46 ? (
-        <p className="truncate text-[11.5px] font-medium leading-tight opacity-90">{course.owner}</p>
+        <p className={cn("truncate font-medium leading-tight opacity-90", large ? "text-[13px]" : "text-[11.5px]")}>
+          {course.owner}
+        </p>
       ) : null}
       {showTime ? (
-        <p className="truncate text-[11.5px] leading-tight tabular-nums opacity-80">
+        <p className={cn("truncate leading-tight tabular-nums opacity-80", large ? "text-[13px]" : "text-[11.5px]")}>
           {course.start} – {course.end}
         </p>
       ) : null}
       {showRoom ? (
-        <p className="flex items-center gap-1 truncate text-[11.5px] leading-tight opacity-80">
+        <p
+          className={cn(
+            "flex items-center gap-1 truncate leading-tight opacity-80",
+            large ? "text-[13px]" : "text-[11.5px]",
+          )}
+        >
           <MapPin className="size-3 shrink-0" />
           <span className="truncate">{course.room}</span>
         </p>

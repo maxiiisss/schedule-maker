@@ -109,7 +109,7 @@ export function CourseChips({ groups, focusKey, onFocus }: CourseListProps) {
   return (
     <ul
       aria-label="Mis ramos"
-      className="flex gap-1.5 overflow-x-auto px-3 pb-1 pt-3 sm:px-5 lg:hidden [scrollbar-width:none]"
+      className="hidden gap-1.5 overflow-x-auto px-3 pb-1 pt-3 sm:flex sm:px-5 lg:hidden [scrollbar-width:none]"
     >
       {groups.map((group) => {
         const active = focusKey === group.key
