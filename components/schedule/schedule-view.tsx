@@ -126,7 +126,16 @@ export function ScheduleView() {
         : addCourse(draft)
     if (result.ok) {
       close()
-      showToast(dialog.mode === "edit" ? "Cambios guardados." : "Ramo agregado.")
+      const isNewSlot =
+        dialog.mode === "create" &&
+        courseGroups.some((group) => group.key === draft.title.trim().toLowerCase())
+      showToast(
+        dialog.mode === "edit"
+          ? "Cambios guardados."
+          : isNewSlot
+            ? `Horario agregado a «${draft.title.trim()}».`
+            : "Ramo agregado.",
+      )
     }
     return result
   }

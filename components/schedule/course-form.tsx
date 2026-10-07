@@ -1,7 +1,7 @@
 "use client"
 
 import { AlertCircle } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import type { MutationResult } from "@/hooks/use-schedule"
 import type { CourseGroup } from "@/lib/schedule/courses"
@@ -9,7 +9,7 @@ import type { CourseDraft, DayId, ValidationError } from "@/lib/schedule/types"
 import { errorFor } from "@/lib/schedule/validation"
 import { ColorPicker } from "./color-picker"
 import { DaySelector } from "./day-selector"
-import { ExistingCoursePicker } from "./existing-course-picker"
+import { CoursePicker, SlotSummary } from "./course-picker"
 
 const fieldClass =
   "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground tabular-nums transition-colors placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25 aria-[invalid=true]:border-destructive"
@@ -20,6 +20,8 @@ interface CourseFormProps {
   initialDraft: CourseDraft
   existingGroups?: CourseGroup[]
   onSubmit: (draft: CourseDraft) => MutationResult
+  /** Reports the ramo getting a new time slot (null when creating a new ramo). */
+  onSelectedTitleChange?: (title: string | null) => void
 }
 
 /** Field label with consistent spacing. */
@@ -57,12 +59,17 @@ export function CourseForm({
   initialDraft,
   existingGroups = [],
   onSubmit,
+  onSelectedTitleChange,
 }: CourseFormProps) {
   const [draft, setDraft] = useState<CourseDraft>(initialDraft)
   const [errors, setErrors] = useState<ValidationError[]>([])
   const [selectedGroup, setSelectedGroup] = useState<CourseGroup | null>(null)
 
   const isAddingSlot = mode === "create" && selectedGroup !== null
+
+  useEffect(() => {
+    onSelectedTitleChange?.(isAddingSlot ? selectedGroup.title : null)
+  }, [isAddingSlot, selectedGroup, onSelectedTitleChange])
 
   const set = <K extends keyof CourseDraft>(key: K, value: CourseDraft[K]) => {
     setDraft((prev) => ({ ...prev, [key]: value }))
@@ -71,11 +78,15 @@ export function CourseForm({
   const handleGroupSelect = (group: CourseGroup | null) => {
     setSelectedGroup(group)
     if (group) {
+      // Start from the latest slot: only the days usually differ from it.
+      const latest = group.slots[group.slots.length - 1]
       setDraft((prev) => ({
         ...prev,
         title: group.title,
         colorId: group.colorId,
-        room: "",
+        room: latest?.room ?? "",
+        start: latest?.start ?? prev.start,
+        end: latest?.end ?? prev.end,
         days: [],
       }))
     } else {
@@ -99,19 +110,20 @@ export function CourseForm({
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-4" noValidate>
       {mode === "create" && existingGroups.length > 0 ? (
-        <ExistingCoursePicker
+        <CoursePicker
           groups={existingGroups}
-          selectedTitle={selectedGroup?.title ?? null}
+          selectedKey={selectedGroup?.key ?? null}
           onSelect={handleGroupSelect}
         />
       ) : null}
 
-      {isAddingSlot ? (
-        <Field label="Ramo seleccionado">
-          <div className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-medium text-foreground">
-            {draft.title}
-          </div>
-        </Field>
+      {isAddingSlot && selectedGroup ? (
+        <div className="space-y-2">
+          <SlotSummary group={selectedGroup} />
+          <p className="text-xs text-muted-foreground text-pretty">
+            Elige los días del nuevo horario. Si cambian la hora o la sala, ajústalas abajo.
+          </p>
+        </div>
       ) : (
         <Field label="Nombre del ramo" htmlFor="course-title" error={errorFor(errors, "title")}>
           <input
@@ -175,18 +187,11 @@ export function CourseForm({
         />
       </Field>
 
-      <Field label="Color">
-        <ColorPicker
-          value={draft.colorId}
-          onChange={(colorId) => set("colorId", colorId)}
-          disabled={isAddingSlot}
-        />
-        {isAddingSlot ? (
-          <p className="text-xs text-muted-foreground">
-            El color se mantiene igual al del ramo original.
-          </p>
-        ) : null}
-      </Field>
+      {isAddingSlot ? null : (
+        <Field label="Color">
+          <ColorPicker value={draft.colorId} onChange={(colorId) => set("colorId", colorId)} />
+        </Field>
+      )}
 
       {formError ? (
         <div
