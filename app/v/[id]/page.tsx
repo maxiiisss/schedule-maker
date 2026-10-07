@@ -14,10 +14,10 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const shared = await loadShared(id)
-  const owner = shared?.name ? `Horario de ${shared.name}` : "Horario compartido"
+  const heading = shared?.name || "Horario compartido"
 
   return {
-    title: `${owner} · ScheduleGrid`,
+    title: `${heading} · ScheduleGrid`,
     description: "Mira este horario semanal y crea el tuyo en ScheduleGrid.",
     // Links are unlisted: keep them out of search results.
     robots: { index: false, follow: false },

@@ -63,7 +63,7 @@ export function SharedScheduleView({ name, courses }: SharedScheduleViewProps) {
     router.push("/")
   }
 
-  const title = name ? `Horario de ${name}` : "Horario compartido"
+  const title = name || "Horario compartido"
   const blocks = courses.reduce((sum, course) => sum + course.days.length, 0)
 
   return (

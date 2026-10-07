@@ -86,21 +86,18 @@ export function SharePanel({ courses }: SharePanelProps) {
   const nativeShare = async () => {
     if (!share) return
     try {
-      await navigator.share({ title: "Mi horario", text: "Mira mi horario:", url: share.url })
+      await navigator.share({ title: share.name || "Mi horario", text: "Mira mi horario:", url: share.url })
     } catch {
       // the user closed the share sheet
     }
   }
 
   const whatsappHref = share
-    ? `https://wa.me/?text=${encodeURIComponent(`Mira mi horario: ${share.url}`)}`
+    ? `https://wa.me/?text=${encodeURIComponent(`${share.name ? `Mira mi horario «${share.name}»` : "Mira mi horario"}: ${share.url}`)}`
     : undefined
 
   return (
-    <section aria-labelledby="share-title" className="grid gap-2.5 border-t border-border pt-4">
-      <h3 id="share-title" className="text-[13px] font-semibold">
-        Compartir enlace
-      </h3>
+    <section aria-label="Compartir enlace" className="grid gap-3">
 
       {share ? (
         <>
@@ -152,12 +149,12 @@ export function SharePanel({ courses }: SharePanelProps) {
       ) : (
         <>
           <label className="grid gap-1.5">
-            <span className="text-xs text-muted-foreground">Tu nombre (opcional)</span>
+            <span className="text-xs text-muted-foreground">Nombre del horario (opcional)</span>
             <input
               value={name}
               maxLength={40}
               onChange={(event) => setName(event.target.value)}
-              placeholder="Ej. Camila"
+              placeholder="Ej. Primer semestre 2026"
               autoComplete="off"
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25"
             />

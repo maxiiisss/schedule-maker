@@ -1,13 +1,15 @@
 import type { Course } from "@/lib/schedule/types"
 
 const SHARE_KEY = "schedule:share:v1"
-const NAME_KEY = "schedule:share-name"
+const NAME_KEY = "schedule:share-title"
 
 /** A link the user created from this browser, with the secret to revoke it. */
 export interface OwnShare {
   id: string
   url: string
   editToken: string
+  /** Optional title of the schedule, as shown on the shared page. */
+  name: string
   createdAt: number
 }
 
@@ -20,7 +22,9 @@ export type CreateShareResult =
 export function loadOwnShare(): OwnShare | null {
   try {
     const raw = window.localStorage.getItem(SHARE_KEY)
-    return raw ? (JSON.parse(raw) as OwnShare) : null
+    if (!raw) return null
+    const share = JSON.parse(raw) as OwnShare
+    return { ...share, name: share.name ?? "" }
   } catch {
     return null
   }
@@ -65,7 +69,7 @@ export async function createShare(name: string, courses: Course[]): Promise<Crea
     if (!response.ok) return { ok: false, reason: "failed" }
 
     const data = (await response.json()) as { id: string; url: string; editToken: string }
-    const share: OwnShare = { ...data, createdAt: Date.now() }
+    const share: OwnShare = { ...data, name: name.trim(), createdAt: Date.now() }
     saveOwnShare(share)
     return { ok: true, share }
   } catch {

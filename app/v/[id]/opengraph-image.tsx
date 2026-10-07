@@ -21,7 +21,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   const { id } = await params
   const shared = await loadShared(id)
 
-  const title = shared?.name ? `Horario de ${shared.name}` : "Horario compartido"
+  const title = shared?.name || "Horario compartido"
   const courses = shared?.courses ?? []
   const days = weekViewDays(courses, false)
   const columnWidth = (size.width - PAD * 2) / days.length
