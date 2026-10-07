@@ -1,18 +1,23 @@
 "use client"
 
 import { toPng } from "html-to-image"
-import { CalendarPlus, FileJson, ImageDown, Plus, Save, Share2, Trash2, Upload } from "lucide-react"
+import { CalendarPlus, FileJson, ImageDown, Plus, Save, Share2, Trash2, Upload, Users } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { Button } from "@/components/ui/button"
+import { CompareBar } from "@/components/compare/compare-bar"
+import { CompareDialog, type AddLinkResult } from "@/components/compare/compare-dialog"
 import { SharePanel } from "@/components/share/share-panel"
+import { Button } from "@/components/ui/button"
 import { useNow } from "@/hooks/use-now"
+import { usePeople } from "@/hooks/use-people"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useViewState } from "@/hooks/use-view-state"
+import { bestFreeSlot, buildComparison, commonFreeSlots, MAX_PEOPLE } from "@/lib/schedule/compare"
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { getCourseGroups } from "@/lib/schedule/courses"
 import { dayIdFromDate, hasWeekendCourses, weekViewDays } from "@/lib/schedule/days"
 import type { Course, CourseDraft, DayId } from "@/lib/schedule/types"
+import { fetchShared, parseShareId } from "@/lib/share/client"
 import { CourseDialog } from "./course-dialog"
 import { DayTabs } from "./day-tabs"
 import { Modal } from "./modal"
@@ -45,6 +50,8 @@ export function ScheduleView() {
   const [dialog, setDialog] = useState<DialogState>(CLOSED)
   const [saveOpen, setSaveOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [compareOpen, setCompareOpen] = useState(false)
+  const [showFree, setShowFree] = useState(true)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [focusKey, setFocusKey] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null)
@@ -54,6 +61,14 @@ export function ScheduleView() {
 
   const { mode, setMode, includeWeekend, setIncludeWeekend, selectedDay, setSelectedDay } = useViewState()
   const nowDate = useNow()
+  const {
+    people,
+    add: addPerson,
+    rename: renamePerson,
+    toggle: togglePerson,
+    remove: removePerson,
+    restore: restorePeople,
+  } = usePeople()
 
   const showToast = useCallback((message: string, undo?: () => void) => {
     window.clearTimeout(toastTimer.current)
@@ -62,11 +77,30 @@ export function ScheduleView() {
   }, [])
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
 
-  const days = useMemo(
-    () => (mode === "day" ? [DAY_BY_ID[selectedDay]] : weekViewDays(courses, includeWeekend)),
-    [mode, selectedDay, courses, includeWeekend],
+  // With people to compare, the grid shows everyone's blocks, colored by person.
+  const visiblePeople = useMemo(() => people.filter((person) => person.visible), [people])
+  const comparing = visiblePeople.length > 0
+  const gridCourses = useMemo(
+    () => (comparing ? buildComparison(courses, people) : courses),
+    [comparing, courses, people],
   )
-  const busyDays = useMemo(() => new Set<DayId>(courses.flatMap((course) => course.days)), [courses])
+
+  const days = useMemo(
+    () => (mode === "day" ? [DAY_BY_ID[selectedDay]] : weekViewDays(gridCourses, includeWeekend)),
+    [mode, selectedDay, gridCourses, includeWeekend],
+  )
+  const busyDays = useMemo(() => new Set<DayId>(gridCourses.flatMap((course) => course.days)), [gridCourses])
+  // Only days where someone has class: a day nobody uses is trivially free.
+  const freeSlots = useMemo(
+    () =>
+      comparing && showFree
+        ? commonFreeSlots(
+            [courses, ...visiblePeople.map((person) => person.courses)],
+            days.map((day) => day.id).filter((id) => busyDays.has(id)),
+          )
+        : undefined,
+    [comparing, showFree, courses, visiblePeople, days, busyDays],
+  )
   const now = useMemo<NowMarker | null>(
     () =>
       nowDate
@@ -206,8 +240,51 @@ export function ScheduleView() {
     }
   }
 
+  const addFromLink = async (text: string): Promise<AddLinkResult> => {
+    const id = parseShareId(text)
+    if (!id) {
+      return {
+        ok: false,
+        message: "Ese no parece un enlace de ScheduleGrid. Pega el enlace completo que te enviaron.",
+      }
+    }
+
+    const shared = await fetchShared(id)
+    if (!shared.ok) {
+      return {
+        ok: false,
+        message:
+          shared.reason === "not-found"
+            ? "Ese enlace no existe o ya no está disponible. Pide uno nuevo."
+            : shared.reason === "rate-limited"
+              ? "Hiciste demasiados intentos. Espera un minuto y vuelve a probar."
+              : "No se pudo traer el horario. Revisa tu conexión y vuelve a intentarlo.",
+      }
+    }
+
+    const added = addPerson({ name: shared.name, courses: shared.courses, sourceId: id })
+    if (!added.ok) {
+      return {
+        ok: false,
+        message:
+          added.reason === "duplicate"
+            ? "Ya agregaste este horario."
+            : `Puedes comparar hasta ${MAX_PEOPLE} horarios a la vez. Quita uno para agregar otro.`,
+      }
+    }
+    return { ok: true, message: `Se agregó «${added.person.name}». Puedes cambiarle el nombre abajo.` }
+  }
+
+  const handleRemovePerson = (id: string) => {
+    const person = people.find((item) => item.id === id)
+    if (!person) return
+    const snapshot = people
+    removePerson(id)
+    showToast(`«${person.name}» quitado de la comparación.`, () => restorePeople(snapshot))
+  }
+
   // A course on Saturday or Sunday keeps the weekend visible.
-  const weekendLocked = hasWeekendCourses(courses)
+  const weekendLocked = hasWeekendCourses(gridCourses)
   const todayId = now?.dayId ?? null
 
   return (
@@ -216,10 +293,10 @@ export function ScheduleView() {
 
       <div className="flex min-w-0 flex-col">
         <header className="sticky top-0 z-30 border-b border-border bg-sidebar/80 px-3 py-3 backdrop-blur-xl backdrop-saturate-150 sm:px-5">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5 lg:flex-nowrap">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5 xl:flex-nowrap">
             <div className="order-1 flex min-w-0 flex-1 items-center gap-2.5">
               <Logo className="lg:hidden" />
-              <div className="min-w-0">
+              <div className="hidden min-w-0 min-[480px]:block">
                 <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight">
                   <span className="lg:hidden">ScheduleGrid</span>
                   <span className="hidden lg:inline">Mi horario</span>
@@ -232,7 +309,7 @@ export function ScheduleView() {
               </div>
             </div>
 
-            <div className="order-3 flex w-full flex-wrap items-center gap-2 lg:order-2 lg:w-auto">
+            <div className="order-3 flex w-full flex-wrap items-center gap-2 xl:order-2 xl:w-auto">
               <Segmented
                 label="Vista"
                 value={mode}
@@ -255,16 +332,17 @@ export function ScheduleView() {
               ) : null}
             </div>
 
-            <div className="order-2 flex items-center gap-1.5 lg:order-3">
+            <div className="order-2 flex items-center gap-1.5 xl:order-3">
               {courses.length > 0 ? (
-                <Button variant="ghost" onClick={handleClear} aria-label="Limpiar horario" className="h-9 px-2.5 sm:px-3">
+                <Button variant="ghost" onClick={handleClear} aria-label="Limpiar horario" title="Limpiar" className="h-9 px-2.5 sm:px-3">
                   <Trash2 className="size-4" />
-                  <span className="hidden sm:inline">Limpiar</span>
+                  <span className="hidden sm:inline lg:hidden xl:inline">Limpiar</span>
                 </Button>
               ) : null}
               <Button
                 variant="outline"
                 aria-label="Guardar horario"
+                title="Guardar"
                 onClick={() => {
                   setSaveMessage(null)
                   setSaveOpen(true)
@@ -272,16 +350,32 @@ export function ScheduleView() {
                 className="h-9 px-2.5 sm:px-3"
               >
                 <Save className="size-4" />
-                <span className="hidden sm:inline">Guardar</span>
+                <span className="hidden sm:inline lg:hidden xl:inline">Guardar</span>
+              </Button>
+              <Button
+                variant="outline"
+                aria-label={comparing ? `Comparar horarios (${visiblePeople.length} activos)` : "Comparar horarios"}
+                title="Comparar"
+                onClick={() => setCompareOpen(true)}
+                className="h-9 px-2.5 sm:px-3"
+              >
+                <Users className="size-4" />
+                <span className="hidden sm:inline lg:hidden xl:inline">Comparar</span>
+                {comparing ? (
+                  <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
+                    {visiblePeople.length}
+                  </span>
+                ) : null}
               </Button>
               <Button
                 variant="outline"
                 aria-label="Compartir horario"
+                title="Compartir"
                 onClick={() => setShareOpen(true)}
                 className="h-9 px-2.5 sm:px-3"
               >
                 <Share2 className="size-4" />
-                <span className="hidden sm:inline">Compartir</span>
+                <span className="hidden sm:inline lg:hidden xl:inline">Compartir</span>
               </Button>
               <Button onClick={openCreate} className="h-9 px-3.5">
                 <Plus className="size-4" />
@@ -297,13 +391,25 @@ export function ScheduleView() {
         <div className="flex flex-col gap-3 px-3 py-3 sm:px-5 sm:py-5">
           {ready && courses.length === 0 ? <EmptyState onAdd={openCreate} /> : null}
 
+          {people.length > 0 ? (
+            <CompareBar
+              people={people}
+              showFree={showFree}
+              onShowFreeChange={setShowFree}
+              bestSlot={freeSlots ? bestFreeSlot(freeSlots) : null}
+              onManage={() => setCompareOpen(true)}
+            />
+          ) : null}
+
           {mode === "day" ? (
             <DayTabs selected={selectedDay} today={todayId} busy={busyDays} onSelect={setSelectedDay} />
           ) : null}
 
           <ScheduleGrid
             days={days}
-            courses={courses}
+            courses={gridCourses}
+            freeSlots={freeSlots}
+            crowded={comparing}
             focusKey={focusKey}
             now={now}
             onEditCourse={openEdit}
@@ -373,6 +479,16 @@ export function ScheduleView() {
           ) : null}
         </div>
       </Modal>
+
+      <CompareDialog
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
+        people={people}
+        onAddLink={addFromLink}
+        onRename={renamePerson}
+        onToggle={togglePerson}
+        onRemove={handleRemovePerson}
+      />
 
       <Modal
         open={shareOpen}

@@ -6,10 +6,11 @@ import { cn } from "@/lib/utils"
 import { colorStyles, resolveColor } from "@/lib/schedule/colors"
 import type { BlockLayout } from "@/lib/schedule/layout"
 import { heightForRange, offsetForTime } from "@/lib/schedule/time"
+import type { GridCourse } from "@/lib/schedule/compare"
 import type { Course } from "@/lib/schedule/types"
 
 interface CourseBlockProps {
-  course: Course
+  course: GridCourse
   dayLabel: string
   layout: BlockLayout
   /** "dimmed" fades the block while another ramo is spotlighted. */
@@ -33,8 +34,10 @@ export function CourseBlock({
   state,
   onEdit,
   onDelete,
-  readOnly = false,
+  readOnly: readOnlyProp = false,
 }: CourseBlockProps) {
+  // Blocks that belong to someone else are always view-only.
+  const readOnly = readOnlyProp || Boolean(course.readOnly)
   const color = resolveColor(course.colorId)
   const styles = colorStyles(color.hex)
   const top = offsetForTime(course.start)
@@ -49,8 +52,9 @@ export function CourseBlock({
   return (
     <div
       role={readOnly ? "group" : "button"}
+      title={`${course.owner ? `${course.owner}: ` : ""}${course.title} · ${course.start}–${course.end}${course.room ? ` · ${course.room}` : ""}`}
       tabIndex={readOnly ? undefined : 0}
-      aria-label={`${course.title}, ${dayLabel} de ${course.start} a ${course.end}${course.room ? `, ${course.room}` : ""}${readOnly ? "" : ". Editar"}`}
+      aria-label={`${course.owner ? `${course.owner}: ` : ""}${course.title}, ${dayLabel} de ${course.start} a ${course.end}${course.room ? `, ${course.room}` : ""}${readOnly ? "" : ". Editar"}`}
       onClick={readOnly ? undefined : () => onEdit?.(course)}
       onKeyDown={
         readOnly
@@ -83,6 +87,9 @@ export function CourseBlock({
         {course.title}
       </p>
 
+      {course.owner && height >= 46 ? (
+        <p className="truncate text-[11.5px] font-medium leading-tight opacity-90">{course.owner}</p>
+      ) : null}
       {showTime ? (
         <p className="truncate text-[11.5px] leading-tight tabular-nums opacity-80">
           {course.start} – {course.end}

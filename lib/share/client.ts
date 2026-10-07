@@ -93,3 +93,38 @@ export async function revokeShare(share: OwnShare): Promise<boolean> {
     return false
   }
 }
+
+/**
+ * Pull the share id out of whatever the user pasted: a full link
+ * (`https://host/v/Ab3dE9fGhJ`, with or without query) or the bare id.
+ */
+export function parseShareId(input: string): string | null {
+  const text = input.trim()
+  if (/^[0-9A-Za-z]{10}$/.test(text)) return text
+
+  try {
+    const url = new URL(text.includes("://") ? text : `https://${text}`)
+    const match = url.pathname.match(/^\/v\/([0-9A-Za-z]{10})\/?$/)
+    return match ? match[1] : null
+  } catch {
+    return null
+  }
+}
+
+export type FetchSharedResult =
+  | { ok: true; name: string; courses: Course[] }
+  | { ok: false; reason: "not-found" | "rate-limited" | "failed" }
+
+export async function fetchShared(id: string): Promise<FetchSharedResult> {
+  try {
+    const response = await fetch(`/api/share/${id}`)
+    if (response.status === 404) return { ok: false, reason: "not-found" }
+    if (response.status === 429) return { ok: false, reason: "rate-limited" }
+    if (!response.ok) return { ok: false, reason: "failed" }
+
+    const data = (await response.json()) as { name: string; courses: Course[] }
+    return { ok: true, name: data.name ?? "", courses: data.courses }
+  } catch {
+    return { ok: false, reason: "failed" }
+  }
+}

@@ -128,6 +128,15 @@ El botón **Compartir**, junto a Guardar, crea una dirección corta (`/v/<id>`) 
 
 **Configuración:** instala la integración de Upstash desde el Marketplace de Vercel (define `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`; ver `.env.example`). Sin esas variables, en desarrollo se usa un almacenamiento en memoria y en producción compartir responde 503.
 
+## 👥 Comparar horarios
+
+El botón **Comparar** permite ver tu horario junto al de otras personas y encontrar las horas en que todos están libres.
+
+- Se agrega un horario pegando su enlace compartido, o con **Comparar con el mío** en la página `/v/<id>`. Se pueden comparar hasta 5 a la vez.
+- Cada persona tiene su color; los bloques de otras personas son de solo lectura. Se pueden renombrar, ocultar y quitar (con «Deshacer»).
+- Las **horas libres en común** se marcan en la grilla («Libres») y la barra indica el mejor hueco. Solo cuentan los días en que alguien tiene clases, y los huecos de al menos 30 minutos dentro de 08:00–22:00.
+- Los horarios de otras personas se guardan solo en este dispositivo (`schedule:people:v1`) y son una copia del momento en que se compartieron.
+
 ## 📄 Licencia
 
 Proyecto personal. Libre para usar y modificar.
