@@ -1,7 +1,19 @@
 "use client"
 
 import { toPng } from "html-to-image"
-import { CalendarPlus, FileJson, ImageDown, Plus, Save, Share2, Trash2, Upload, Users } from "lucide-react"
+import {
+  CalendarPlus,
+  ChevronDown,
+  FileJson,
+  ImageDown,
+  Menu,
+  Plus,
+  Save,
+  Share2,
+  Trash2,
+  Upload,
+  Users,
+} from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { CompareBar } from "@/components/compare/compare-bar"
@@ -16,11 +28,13 @@ import { bestFreeSlot, buildComparison, commonFreeSlots, MAX_PEOPLE } from "@/li
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { getCourseGroups } from "@/lib/schedule/courses"
 import { dayIdFromDate, hasWeekendCourses, weekViewDays } from "@/lib/schedule/days"
+import { FLASH_STORAGE_KEY } from "@/lib/schedule/storage-keys"
 import type { Course, CourseDraft, DayId } from "@/lib/schedule/types"
 import { fetchShared, parseShareId } from "@/lib/share/client"
 import { CourseDialog } from "./course-dialog"
 import { DayTabs } from "./day-tabs"
 import { Modal } from "./modal"
+import { MenuChoice, MenuItem, MenuSeparator, PopoverMenu } from "./popover-menu"
 import { ScheduleGrid, type NowMarker } from "./schedule-grid"
 import { CourseChips, Logo, ScheduleSidebar } from "./schedule-sidebar"
 import { Segmented } from "./segmented"
@@ -32,6 +46,10 @@ interface DialogState {
   editingId: string | null
   session: number
 }
+
+/** Celeste outline for the actions that involve other people, so they stand apart from Guardar. */
+const SOCIAL_BUTTON =
+  "h-9 border-sky/40 bg-sky/10 px-2.5 text-sky hover:bg-sky/20 hover:text-sky aria-expanded:bg-sky/20 sm:px-3"
 
 const CLOSED: DialogState = { open: false, mode: "create", editingId: null, session: 0 }
 
@@ -51,6 +69,8 @@ export function ScheduleView() {
   const [saveOpen, setSaveOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
+  // Phone header menus: only one can be open at a time.
+  const [phoneMenu, setPhoneMenu] = useState<"view" | "menu" | null>(null)
   const [showFree, setShowFree] = useState(true)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [focusKey, setFocusKey] = useState<string | null>(null)
@@ -76,6 +96,18 @@ export function ScheduleView() {
     toastTimer.current = window.setTimeout(() => setToast(null), undo ? 6000 : 2600)
   }, [])
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
+
+  // An import from a shared page leaves a one-shot message for this page.
+  useEffect(() => {
+    try {
+      const flash = window.sessionStorage.getItem(FLASH_STORAGE_KEY)
+      if (!flash) return
+      window.sessionStorage.removeItem(FLASH_STORAGE_KEY)
+      showToast(flash)
+    } catch {
+      // storage unavailable: skip the message
+    }
+  }, [showToast])
 
   // With people to compare, the grid shows everyone's blocks, colored by person.
   const visiblePeople = useMemo(() => people.filter((person) => person.visible), [people])
@@ -292,7 +324,90 @@ export function ScheduleView() {
       <ScheduleSidebar groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
       <div className="flex min-w-0 flex-col">
-        <header className="sticky top-0 z-30 border-b border-border bg-sidebar/80 px-3 py-3 backdrop-blur-xl backdrop-saturate-150 sm:px-5">
+        {/* Phones: one 44 px row so the grid gets the screen. */}
+        <div className="sticky top-0 z-30 flex h-11 items-center justify-between border-b border-border bg-sidebar/80 pl-3 pr-1 backdrop-blur-xl backdrop-saturate-150 sm:hidden">
+          <div className="flex min-w-0 items-center gap-2">
+            <Logo className="size-7" />
+            <span className="truncate text-[15px] font-semibold tracking-tight">ScheduleGrid</span>
+          </div>
+
+          <div className="flex items-center">
+            <PopoverMenu
+              open={phoneMenu === "view"}
+              onOpenChange={(open) => setPhoneMenu(open ? "view" : null)}
+              label="Vista"
+              trigger={(props) => (
+                <button
+                  type="button"
+                  {...props}
+                  aria-label={`Vista: ${mode === "week" ? "Semana" : "Día"}`}
+                  className="group flex h-11 items-center px-1 focus-visible:outline-none"
+                >
+                  <span className="inline-flex h-8 items-center gap-1 rounded-full bg-muted pl-3 pr-2 text-[13px] font-medium group-focus-visible:outline-2 group-focus-visible:outline-ring">
+                    {mode === "week" ? "Semana" : "Día"}
+                    <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+                  </span>
+                </button>
+              )}
+            >
+              <MenuChoice kind="radio" label="Día" checked={mode === "day"} onSelect={() => setMode("day")} />
+              <MenuChoice kind="radio" label="Semana" checked={mode === "week"} onSelect={() => setMode("week")} />
+              {mode === "week" ? (
+                <>
+                  <MenuSeparator />
+                  <MenuChoice
+                    kind="checkbox"
+                    label="Incluir fin de semana"
+                    checked={includeWeekend || weekendLocked}
+                    disabled={weekendLocked}
+                    onSelect={() => setIncludeWeekend(!includeWeekend)}
+                  />
+                </>
+              ) : null}
+            </PopoverMenu>
+
+            <PopoverMenu
+              open={phoneMenu === "menu"}
+              onOpenChange={(open) => setPhoneMenu(open ? "menu" : null)}
+              label="Menú"
+              trigger={(props) => (
+                <button
+                  type="button"
+                  {...props}
+                  aria-label="Menú"
+                  className="grid size-11 place-items-center rounded-lg text-foreground focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring"
+                >
+                  <Menu className="size-5" aria-hidden />
+                </button>
+              )}
+            >
+              <MenuItem
+                icon={Users}
+                tone="sky"
+                label="Comparar"
+                badge={visiblePeople.length}
+                onSelect={() => setCompareOpen(true)}
+              />
+              <MenuItem icon={Share2} tone="sky" label="Compartir" onSelect={() => setShareOpen(true)} />
+              <MenuItem
+                icon={Save}
+                label="Guardar"
+                onSelect={() => {
+                  setSaveMessage(null)
+                  setSaveOpen(true)
+                }}
+              />
+              {courses.length > 0 ? (
+                <>
+                  <MenuSeparator />
+                  <MenuItem icon={Trash2} tone="destructive" label="Limpiar horario" onSelect={handleClear} />
+                </>
+              ) : null}
+            </PopoverMenu>
+          </div>
+        </div>
+
+        <header className="sticky top-0 z-30 hidden border-b border-border bg-sidebar/80 px-3 py-3 backdrop-blur-xl backdrop-saturate-150 sm:block sm:px-5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5 xl:flex-nowrap">
             <div className="order-1 flex min-w-0 flex-1 items-center gap-2.5">
               <Logo className="lg:hidden" />
@@ -332,11 +447,18 @@ export function ScheduleView() {
               ) : null}
             </div>
 
+            {/* Actions in tiers: quiet (clear), neutral (save), celeste (compare/share), solid (add). */}
             <div className="order-2 flex items-center gap-1.5 xl:order-3">
               {courses.length > 0 ? (
-                <Button variant="ghost" onClick={handleClear} aria-label="Limpiar horario" title="Limpiar" className="h-9 px-2.5 sm:px-3">
+                <Button
+                  variant="ghost"
+                  onClick={handleClear}
+                  aria-label="Limpiar horario"
+                  title="Limpiar"
+                  className="h-9 px-2.5 hover:text-destructive sm:px-3"
+                >
                   <Trash2 className="size-4" />
-                  <span className="hidden sm:inline lg:hidden xl:inline">Limpiar</span>
+                  <span className="hidden sm:inline">Limpiar</span>
                 </Button>
               ) : null}
               <Button
@@ -350,19 +472,22 @@ export function ScheduleView() {
                 className="h-9 px-2.5 sm:px-3"
               >
                 <Save className="size-4" />
-                <span className="hidden sm:inline lg:hidden xl:inline">Guardar</span>
+                <span className="hidden sm:inline">Guardar</span>
               </Button>
+
+              <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
+
               <Button
                 variant="outline"
                 aria-label={comparing ? `Comparar horarios (${visiblePeople.length} activos)` : "Comparar horarios"}
                 title="Comparar"
                 onClick={() => setCompareOpen(true)}
-                className="h-9 px-2.5 sm:px-3"
+                className={SOCIAL_BUTTON}
               >
                 <Users className="size-4" />
-                <span className="hidden sm:inline lg:hidden xl:inline">Comparar</span>
+                <span className="hidden sm:inline">Comparar</span>
                 {comparing ? (
-                  <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
+                  <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-sky px-1 text-[11px] font-semibold text-[#06222e]">
                     {visiblePeople.length}
                   </span>
                 ) : null}
@@ -372,11 +497,14 @@ export function ScheduleView() {
                 aria-label="Compartir horario"
                 title="Compartir"
                 onClick={() => setShareOpen(true)}
-                className="h-9 px-2.5 sm:px-3"
+                className={SOCIAL_BUTTON}
               >
                 <Share2 className="size-4" />
-                <span className="hidden sm:inline lg:hidden xl:inline">Compartir</span>
+                <span className="hidden sm:inline">Compartir</span>
               </Button>
+
+              <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
+
               <Button onClick={openCreate} className="h-9 px-3.5">
                 <Plus className="size-4" />
                 <span className="sm:hidden">Agregar</span>
@@ -388,7 +516,7 @@ export function ScheduleView() {
 
         <CourseChips groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
-        <div className="flex flex-col gap-3 px-3 py-3 sm:px-5 sm:py-5">
+        <div className="flex flex-col gap-3 px-3 py-3 pb-24 sm:px-5 sm:py-5 sm:pb-5">
           {ready && courses.length === 0 ? <EmptyState onAdd={openCreate} /> : null}
 
           {people.length > 0 ? (
@@ -498,6 +626,16 @@ export function ScheduleView() {
       >
         <SharePanel courses={courses} />
       </Modal>
+
+      <button
+        type="button"
+        aria-label="Agregar ramo"
+        title="Agregar ramo"
+        onClick={openCreate}
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_rgb(0_0_0/0.45)] transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+      >
+        <Plus className="size-6" strokeWidth={2.25} aria-hidden />
+      </button>
 
       <Toast
         message={toast?.message ?? null}

@@ -27,6 +27,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
   const previouslyFocused = useRef<HTMLElement | null>(null)
   const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2)}`)
   const descId = useRef(`modal-desc-${Math.random().toString(36).slice(2)}`)
+  const drag = useRef<{ startY: number; startTime: number } | null>(null)
 
   useEffect(() => {
     if (!open) return
@@ -74,6 +75,42 @@ export function Modal({ open, onClose, title, description, children, footer }: M
     }
   }, [open, onClose])
 
+  // Phones only: drag the handle down to dismiss the sheet. Plain pointer events, no library.
+  const dragOffset = (event: React.PointerEvent) =>
+    drag.current ? Math.max(0, event.clientY - drag.current.startY) : 0
+
+  const onDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    drag.current = { startY: event.clientY, startTime: event.timeStamp }
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      // the pointer is already gone: dragging simply will not track outside the handle
+    }
+    if (panelRef.current) panelRef.current.style.transition = "none"
+  }
+
+  const onDragMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current || !panelRef.current) return
+    panelRef.current.style.transform = `translateY(${dragOffset(event)}px)`
+  }
+
+  const onDragEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const current = drag.current
+    const panel = panelRef.current
+    const distance = dragOffset(event)
+    drag.current = null
+    if (!current || !panel) return
+
+    const speed = distance / Math.max(1, event.timeStamp - current.startTime)
+    if (event.type === "pointerup" && (distance > 96 || (distance > 40 && speed > 0.6))) {
+      onClose()
+      return
+    }
+    // Not far enough (or cancelled): spring back.
+    panel.style.transition = "transform 160ms ease-out"
+    panel.style.transform = ""
+  }
+
   if (!open || typeof document === "undefined") return null
 
   return createPortal(
@@ -94,9 +131,21 @@ export function Modal({ open, onClose, title, description, children, footer }: M
         aria-modal="true"
         aria-labelledby={titleId.current}
         aria-describedby={description ? descId.current : undefined}
-        className="relative z-10 flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-xl border border-input bg-popover text-popover-foreground shadow-[0_24px_70px_rgb(0_0_0/0.6)] animate-in slide-in-from-bottom-4 sm:max-w-md sm:rounded-xl sm:zoom-in-95"
+        className="relative z-10 flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-xl border border-input bg-popover pb-[env(safe-area-inset-bottom)] text-popover-foreground shadow-[0_24px_70px_rgb(0_0_0/0.6)] animate-in slide-in-from-bottom-4 sm:max-w-md sm:rounded-xl sm:pb-0 sm:zoom-in-95"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+        {/* Handle: 36 x 4 px bar inside a 44 px touch area. Phones only. */}
+        <div
+          aria-hidden
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+          className="absolute left-1/2 top-0 z-10 flex h-11 w-40 -translate-x-1/2 cursor-grab touch-none items-start justify-center pt-2 sm:hidden"
+        >
+          <span className="h-1 w-9 rounded-full bg-muted-foreground/40" />
+        </div>
+
+        <header className="flex items-start justify-between gap-4 border-b border-border px-5 pb-4 pt-6 sm:px-6 sm:py-4">
           <div className="space-y-0.5">
             <h2 id={titleId.current} className="text-[15px] font-semibold tracking-tight">
               {title}
@@ -122,7 +171,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
         <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
 
         {footer ? (
-          <footer className="border-t border-border px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] sm:px-6">{footer}</footer>
+          <footer className="border-t border-border px-5 py-3.5 sm:px-6">{footer}</footer>
         ) : null}
       </div>
     </div>,

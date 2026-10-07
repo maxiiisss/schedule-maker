@@ -119,7 +119,7 @@ pnpm start
 
 ## 🔗 Compartir por enlace
 
-El botón **Compartir**, junto a Guardar, crea una dirección corta (`/v/<id>`) con una copia del horario, lista para enviar por WhatsApp. Quien la abre ve el horario en solo lectura y puede copiarlo como suyo.
+El botón **Compartir**, junto a Guardar, crea una dirección corta (`/v/<id>`) con una copia del horario, lista para enviar por WhatsApp. Quien la abre ve el horario en solo lectura y puede **agregarlo a su horario** (suma los ramos sin borrar los que ya tiene y omite los repetidos), compararlo con el suyo o reemplazar el suyo. Sirve también para llevar tu horario de un dispositivo a otro: abre el enlace en el otro y pulsa «Agregar a mi horario».
 
 - Los enlaces se guardan en **Upstash Redis** y caducan a los 90 días sin visitas (cada visita los renueva).
 - El id es aleatorio de 10 caracteres y la página lleva `noindex`. Quien creó el enlace puede desactivarlo con «Dejar de compartir».
