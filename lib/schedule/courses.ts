@@ -1,6 +1,9 @@
 import { durationMinutes } from "./time"
 import type { Course } from "./types"
 
+/** One scheduled block of a ramo: when and where it meets. */
+export type CourseSlot = Pick<Course, "days" | "start" | "end" | "room">
+
 /**
  * A logical "ramo" derived from existing blocks that share the same title.
  * Used when adding an additional time slot to a course already on the schedule.
@@ -12,6 +15,8 @@ export interface CourseGroup {
   key: string
   /** Weekly minutes across every block and day of this ramo. */
   minutes: number
+  /** Every block of this ramo, in the order they were added. */
+  slots: CourseSlot[]
 }
 
 /**
@@ -26,9 +31,16 @@ export function getCourseGroups(courses: Course[]): CourseGroup[] {
     if (normalized.length === 0) continue
 
     const weekly = durationMinutes(course.start, course.end) * course.days.length
+    const slot: CourseSlot = {
+      days: course.days,
+      start: course.start,
+      end: course.end,
+      room: course.room,
+    }
     const group = seen.get(normalized)
     if (group) {
       group.minutes += weekly
+      group.slots.push(slot)
       continue
     }
 
@@ -37,6 +49,7 @@ export function getCourseGroups(courses: Course[]): CourseGroup[] {
       colorId: course.colorId,
       key: normalized,
       minutes: weekly,
+      slots: [slot],
     })
   }
 
