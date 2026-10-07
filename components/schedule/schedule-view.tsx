@@ -16,6 +16,7 @@ import { bestFreeSlot, buildComparison, commonFreeSlots, MAX_PEOPLE } from "@/li
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { getCourseGroups } from "@/lib/schedule/courses"
 import { dayIdFromDate, hasWeekendCourses, weekViewDays } from "@/lib/schedule/days"
+import { FLASH_STORAGE_KEY } from "@/lib/schedule/storage-keys"
 import type { Course, CourseDraft, DayId } from "@/lib/schedule/types"
 import { fetchShared, parseShareId } from "@/lib/share/client"
 import { CourseDialog } from "./course-dialog"
@@ -32,6 +33,10 @@ interface DialogState {
   editingId: string | null
   session: number
 }
+
+/** Celeste outline for the actions that involve other people, so they stand apart from Guardar. */
+const SOCIAL_BUTTON =
+  "h-9 border-sky/40 bg-sky/10 px-2.5 text-sky hover:bg-sky/20 hover:text-sky aria-expanded:bg-sky/20 sm:px-3"
 
 const CLOSED: DialogState = { open: false, mode: "create", editingId: null, session: 0 }
 
@@ -76,6 +81,18 @@ export function ScheduleView() {
     toastTimer.current = window.setTimeout(() => setToast(null), undo ? 6000 : 2600)
   }, [])
   useEffect(() => () => window.clearTimeout(toastTimer.current), [])
+
+  // An import from a shared page leaves a one-shot message for this page.
+  useEffect(() => {
+    try {
+      const flash = window.sessionStorage.getItem(FLASH_STORAGE_KEY)
+      if (!flash) return
+      window.sessionStorage.removeItem(FLASH_STORAGE_KEY)
+      showToast(flash)
+    } catch {
+      // storage unavailable: skip the message
+    }
+  }, [showToast])
 
   // With people to compare, the grid shows everyone's blocks, colored by person.
   const visiblePeople = useMemo(() => people.filter((person) => person.visible), [people])
@@ -332,11 +349,18 @@ export function ScheduleView() {
               ) : null}
             </div>
 
+            {/* Actions in tiers: quiet (clear), neutral (save), celeste (compare/share), solid (add). */}
             <div className="order-2 flex items-center gap-1.5 xl:order-3">
               {courses.length > 0 ? (
-                <Button variant="ghost" onClick={handleClear} aria-label="Limpiar horario" title="Limpiar" className="h-9 px-2.5 sm:px-3">
+                <Button
+                  variant="ghost"
+                  onClick={handleClear}
+                  aria-label="Limpiar horario"
+                  title="Limpiar"
+                  className="h-9 px-2.5 hover:text-destructive sm:px-3"
+                >
                   <Trash2 className="size-4" />
-                  <span className="hidden sm:inline lg:hidden xl:inline">Limpiar</span>
+                  <span className="hidden sm:inline">Limpiar</span>
                 </Button>
               ) : null}
               <Button
@@ -350,19 +374,22 @@ export function ScheduleView() {
                 className="h-9 px-2.5 sm:px-3"
               >
                 <Save className="size-4" />
-                <span className="hidden sm:inline lg:hidden xl:inline">Guardar</span>
+                <span className="hidden sm:inline">Guardar</span>
               </Button>
+
+              <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
+
               <Button
                 variant="outline"
                 aria-label={comparing ? `Comparar horarios (${visiblePeople.length} activos)` : "Comparar horarios"}
                 title="Comparar"
                 onClick={() => setCompareOpen(true)}
-                className="h-9 px-2.5 sm:px-3"
+                className={SOCIAL_BUTTON}
               >
                 <Users className="size-4" />
-                <span className="hidden sm:inline lg:hidden xl:inline">Comparar</span>
+                <span className="hidden sm:inline">Comparar</span>
                 {comparing ? (
-                  <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-primary px-1 text-[11px] font-semibold text-primary-foreground">
+                  <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-sky px-1 text-[11px] font-semibold text-[#06222e]">
                     {visiblePeople.length}
                   </span>
                 ) : null}
@@ -372,11 +399,14 @@ export function ScheduleView() {
                 aria-label="Compartir horario"
                 title="Compartir"
                 onClick={() => setShareOpen(true)}
-                className="h-9 px-2.5 sm:px-3"
+                className={SOCIAL_BUTTON}
               >
                 <Share2 className="size-4" />
-                <span className="hidden sm:inline lg:hidden xl:inline">Compartir</span>
+                <span className="hidden sm:inline">Compartir</span>
               </Button>
+
+              <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
+
               <Button onClick={openCreate} className="h-9 px-3.5">
                 <Plus className="size-4" />
                 <span className="sm:hidden">Agregar</span>
