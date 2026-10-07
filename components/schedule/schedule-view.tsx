@@ -1,10 +1,11 @@
 "use client"
 
 import { toPng } from "html-to-image"
-import { CalendarPlus, FileJson, ImageDown, Plus, Save, Trash2, Upload } from "lucide-react"
+import { CalendarPlus, FileJson, ImageDown, Plus, Save, Share2, Trash2, Upload } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { SharePanel } from "@/components/share/share-panel"
 import { useNow } from "@/hooks/use-now"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useViewState } from "@/hooks/use-view-state"
@@ -43,6 +44,7 @@ export function ScheduleView() {
   } = useSchedule()
   const [dialog, setDialog] = useState<DialogState>(CLOSED)
   const [saveOpen, setSaveOpen] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [focusKey, setFocusKey] = useState<string | null>(null)
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null)
@@ -272,6 +274,15 @@ export function ScheduleView() {
                 <Save className="size-4" />
                 <span className="hidden sm:inline">Guardar</span>
               </Button>
+              <Button
+                variant="outline"
+                aria-label="Compartir horario"
+                onClick={() => setShareOpen(true)}
+                className="h-9 px-2.5 sm:px-3"
+              >
+                <Share2 className="size-4" />
+                <span className="hidden sm:inline">Compartir</span>
+              </Button>
               <Button onClick={openCreate} className="h-9 px-3.5">
                 <Plus className="size-4" />
                 <span className="sm:hidden">Agregar</span>
@@ -361,6 +372,15 @@ export function ScheduleView() {
             </p>
           ) : null}
         </div>
+      </Modal>
+
+      <Modal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title="Compartir horario"
+        description="Crea un enlace para enviar tu horario por WhatsApp u otra app."
+      >
+        <SharePanel courses={courses} />
       </Modal>
 
       <Toast

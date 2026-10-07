@@ -117,6 +117,17 @@ pnpm start
 - Soporta horas con minutos personalizados (no requiere intervalos fijos)
 - Los bloques superpuestos se distribuyen automáticamente en columnas
 
+## 🔗 Compartir por enlace
+
+El botón **Compartir**, junto a Guardar, crea una dirección corta (`/v/<id>`) con una copia del horario, lista para enviar por WhatsApp. Quien la abre ve el horario en solo lectura y puede copiarlo como suyo.
+
+- Los enlaces se guardan en **Upstash Redis** y caducan a los 90 días sin visitas (cada visita los renueva).
+- El id es aleatorio de 10 caracteres y la página lleva `noindex`. Quien creó el enlace puede desactivarlo con «Dejar de compartir».
+- La API (`POST /api/share`) valida el horario, limita el tamaño y permite 10 peticiones por minuto por IP.
+- La vista previa de WhatsApp se genera en `app/v/[id]/opengraph-image.tsx`.
+
+**Configuración:** instala la integración de Upstash desde el Marketplace de Vercel (define `UPSTASH_REDIS_REST_URL` y `UPSTASH_REDIS_REST_TOKEN`; ver `.env.example`). Sin esas variables, en desarrollo se usa un almacenamiento en memoria y en producción compartir responde 503.
+
 ## 📄 Licencia
 
 Proyecto personal. Libre para usar y modificar.

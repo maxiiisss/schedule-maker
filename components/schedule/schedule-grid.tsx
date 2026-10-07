@@ -23,8 +23,10 @@ interface ScheduleGridProps {
   /** Lower-cased ramo title to spotlight; other blocks are dimmed. */
   focusKey: string | null
   now: NowMarker | null
-  onEditCourse: (course: Course) => void
-  onDeleteCourse: (id: string) => void
+  onEditCourse?: (course: Course) => void
+  onDeleteCourse?: (id: string) => void
+  /** View-only rendering, used for shared schedules. */
+  readOnly?: boolean
   gridRef?: RefObject<HTMLDivElement | null>
 }
 
@@ -44,6 +46,7 @@ export function ScheduleGrid({
   now,
   onEditCourse,
   onDeleteCourse,
+  readOnly = false,
   gridRef,
 }: ScheduleGridProps) {
   const bodyHeight = gridBodyHeight()
@@ -149,6 +152,7 @@ export function ScheduleGrid({
                       }
                       onEdit={onEditCourse}
                       onDelete={onDeleteCourse}
+                      readOnly={readOnly}
                     />
                   ))}
 
