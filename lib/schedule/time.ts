@@ -70,3 +70,19 @@ export function isWithinGridBounds(start: string, end: string): boolean {
     timeToMinutes(end) <= END_HOUR * 60
   )
 }
+
+/** Readable duration, e.g. "1 h 30 min", "3 h", "45 min". */
+export function formatDuration(minutes: number): string {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  if (h && m) return `${h} h ${m} min`
+  if (h) return `${h} h`
+  return `${m} min`
+}
+
+/** Compact hours for tight spots, e.g. "1,5 h". */
+export function formatHoursShort(minutes: number): string {
+  const hours = minutes / 60
+  const text = Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(".", ",")
+  return `${text} h`
+}

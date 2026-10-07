@@ -12,7 +12,7 @@ import { DaySelector } from "./day-selector"
 import { ExistingCoursePicker } from "./existing-course-picker"
 
 const fieldClass =
-  "h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[invalid=true]:border-destructive"
+  "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground tabular-nums transition-colors placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25 aria-[invalid=true]:border-destructive"
 
 interface CourseFormProps {
   formId: string
@@ -36,7 +36,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
+      <label htmlFor={htmlFor} className="text-xs text-muted-foreground">
         {label}
       </label>
       {children}
@@ -97,7 +97,7 @@ export function CourseForm({
   const formError = errorFor(errors, "form")
 
   return (
-    <form id={formId} onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form id={formId} onSubmit={handleSubmit} className="space-y-4" noValidate>
       {mode === "create" && existingGroups.length > 0 ? (
         <ExistingCoursePicker
           groups={existingGroups}
@@ -108,7 +108,7 @@ export function CourseForm({
 
       {isAddingSlot ? (
         <Field label="Ramo seleccionado">
-          <div className="flex h-10 items-center rounded-lg border border-input bg-muted/40 px-3 text-sm font-medium text-foreground">
+          <div className="flex h-9 items-center rounded-md border border-input bg-muted/40 px-3 text-sm font-medium text-foreground">
             {draft.title}
           </div>
         </Field>
@@ -142,6 +142,8 @@ export function CourseForm({
           <input
             id="course-start"
             type="text"
+            inputMode="numeric"
+            autoComplete="off"
             placeholder="HH:mm (ej: 13:50)"
             value={draft.start}
             onChange={(e) => set("start", e.target.value)}
@@ -154,6 +156,8 @@ export function CourseForm({
           <input
             id="course-end"
             type="text"
+            inputMode="numeric"
+            autoComplete="off"
             placeholder="HH:mm (ej: 14:50)"
             value={draft.end}
             onChange={(e) => set("end", e.target.value)}
@@ -187,7 +191,7 @@ export function CourseForm({
       {formError ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+          className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
         >
           <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <span>{formError}</span>
