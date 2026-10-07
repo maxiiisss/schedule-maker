@@ -1,7 +1,7 @@
 "use client"
 
 import { toPng } from "html-to-image"
-import { CalendarCheck, CalendarPlus, FileJson, ImageDown, Plus, Save, Share2, Trash2, Upload, Users } from "lucide-react"
+import { CalendarPlus, FileJson, ImageDown, Menu, Plus, Save, Share2, Trash2, Upload, Users, X } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { CompareBar } from "@/components/compare/compare-bar"
@@ -29,7 +29,8 @@ import { fetchShared, parseShareId } from "@/lib/share/client"
 import { CourseDialog } from "./course-dialog"
 import { DayTabs } from "./day-tabs"
 import { Modal } from "./modal"
-import { MobileActionBar, MobileFab } from "./mobile-bar"
+import { MobileFab } from "./mobile-bar"
+import { MobileMenu } from "./mobile-menu"
 import { ScheduleGrid, type NowMarker } from "./schedule-grid"
 import { CourseChips, Logo, ScheduleSidebar } from "./schedule-sidebar"
 import { Segmented } from "./segmented"
@@ -65,6 +66,7 @@ export function ScheduleView() {
   const [saveOpen, setSaveOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [showFree, setShowFree] = useState(true)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [focusKey, setFocusKey] = useState<string | null>(null)
@@ -334,8 +336,18 @@ export function ScheduleView() {
       <div className="flex min-w-0 flex-col">
         {/* Phones: slim bar with the month and a week strip, like Google Calendar and Calendar on iPhone. */}
         <div className="sticky top-0 z-30 border-b border-border bg-sidebar/85 backdrop-blur-xl backdrop-saturate-150 sm:hidden">
-          <div className="flex items-center gap-2.5 px-4 pb-1.5 pt-3">
-            <Logo className="size-8" />
+          <div className="flex items-center gap-1.5 pb-1.5 pl-2 pr-4 pt-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Abrir menú"
+              aria-haspopup="dialog"
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen(true)}
+              className="size-10 text-foreground"
+            >
+              <Menu className="size-6" />
+            </Button>
             <h1 className="min-w-0 flex-1 truncate text-[19px] font-semibold tracking-tight">{mobileTitle}</h1>
             <Segmented
               label="Vista"
@@ -356,9 +368,20 @@ export function ScheduleView() {
                 busy={busyDays}
                 onSelect={setSelectedDay}
               />
-              <p className="px-4 pb-2.5 text-[13px] font-medium text-muted-foreground">
-                {selectedDate ? formatDayTitle(selectedDate) : DAY_BY_ID[selectedDay].label}
-              </p>
+              <div className="flex items-center justify-between gap-3 px-4 pb-2.5">
+                <p className="min-w-0 truncate text-[13px] font-medium text-muted-foreground">
+                  {selectedDate ? formatDayTitle(selectedDate) : DAY_BY_ID[selectedDay].label}
+                </p>
+                {todayId && selectedDay !== todayId ? (
+                  <button
+                    type="button"
+                    onClick={goToday}
+                    className="shrink-0 rounded-full border border-input px-3 py-1 text-[13px] font-medium text-sky focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  >
+                    Ir a hoy
+                  </button>
+                ) : null}
+              </div>
             </>
           ) : null}
         </div>
@@ -472,10 +495,66 @@ export function ScheduleView() {
 
         <CourseChips groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
-        <div className="flex flex-col gap-3 pb-28 sm:px-5 sm:py-5 sm:pb-5 max-sm:pt-3">
+        <div className="flex flex-col gap-3 pb-24 sm:px-5 sm:py-5 sm:pb-5 max-sm:pt-3">
+          {/* Phones: the same actions as the desktop toolbar, as plain buttons in the page. */}
+          <div className="grid grid-cols-3 gap-2 px-3 sm:hidden">
+            <Button
+              variant="outline"
+              onClick={() => setCompareOpen(true)}
+              aria-label={comparing ? `Comparar horarios (${visiblePeople.length} activos)` : "Comparar horarios"}
+              className={`${SOCIAL_BUTTON} h-10 justify-center`}
+            >
+              <Users className="size-4" />
+              Comparar
+              {comparing ? (
+                <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-sky px-1 text-[11px] font-semibold text-[#06222e]">
+                  {visiblePeople.length}
+                </span>
+              ) : null}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShareOpen(true)}
+              aria-label="Compartir horario"
+              className={`${SOCIAL_BUTTON} h-10 justify-center`}
+            >
+              <Share2 className="size-4" />
+              Compartir
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSaveMessage(null)
+                setSaveOpen(true)
+              }}
+              aria-label="Guardar horario"
+              className="h-10 justify-center px-2.5"
+            >
+              <Save className="size-4" />
+              Guardar
+            </Button>
+          </div>
+
           {ready && courses.length === 0 ? (
             <div className="max-sm:px-3">
               <EmptyState onAdd={openCreate} />
+            </div>
+          ) : null}
+
+          {focusKey ? (
+            <div className="px-3 sm:hidden">
+              <button
+                type="button"
+                onClick={() => setFocusKey(null)}
+                className="inline-flex h-8 max-w-full items-center gap-2 rounded-full border border-input bg-card pl-3 pr-2.5 text-[13px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <span className="truncate">
+                  Resaltando{" "}
+                  <span className="font-medium">{courseGroups.find((group) => group.key === focusKey)?.title}</span>
+                </span>
+                <X className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="sr-only">Quitar resalte</span>
+              </button>
             </div>
           ) : null}
 
@@ -561,19 +640,6 @@ export function ScheduleView() {
             <Upload className="size-4" />
             Restaurar desde un respaldo
           </Button>
-          {courses.length > 0 ? (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setSaveOpen(false)
-                handleClear()
-              }}
-              className="h-10 justify-start px-3.5 text-destructive hover:text-destructive sm:hidden"
-            >
-              <Trash2 className="size-4" />
-              Limpiar horario
-            </Button>
-          ) : null}
           <p className="mt-2 text-[13px] text-muted-foreground text-pretty">
             El horario se guarda automáticamente en este navegador y se recuperará al volver a abrir la página.
           </p>
@@ -604,21 +670,26 @@ export function ScheduleView() {
         <SharePanel courses={courses} />
       </Modal>
 
-      <MobileActionBar
-        items={[
-          { label: "Hoy", icon: CalendarCheck, onClick: goToday },
-          { label: "Comparar", icon: Users, onClick: () => setCompareOpen(true), badge: visiblePeople.length, accent: true },
-          { label: "Compartir", icon: Share2, onClick: () => setShareOpen(true), accent: true },
-          {
-            label: "Guardar",
-            icon: Save,
-            onClick: () => {
-              setSaveMessage(null)
-              setSaveOpen(true)
-            },
-          },
-        ]}
+      <MobileMenu
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        groups={courseGroups}
+        focusKey={focusKey}
+        onFocus={setFocusKey}
+        includeWeekend={includeWeekend}
+        weekendLocked={weekendLocked}
+        onIncludeWeekend={setIncludeWeekend}
+        comparing={visiblePeople.length}
+        hasCourses={courses.length > 0}
+        onSave={() => {
+          setSaveMessage(null)
+          setSaveOpen(true)
+        }}
+        onCompare={() => setCompareOpen(true)}
+        onShare={() => setShareOpen(true)}
+        onClear={handleClear}
       />
+
       <MobileFab label="Agregar ramo" onClick={openCreate} />
 
       <Toast

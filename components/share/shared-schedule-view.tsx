@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 
 import { DayTabs } from "@/components/schedule/day-tabs"
-import { MobileBar } from "@/components/schedule/mobile-bar"
 import { Modal } from "@/components/schedule/modal"
 import { ScheduleGrid, type NowMarker } from "@/components/schedule/schedule-grid"
 import { Logo } from "@/components/schedule/schedule-sidebar"
@@ -124,7 +123,7 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
   const blocks = courses.reduce((sum, course) => sum + course.days.length, 0)
 
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-3 pb-28 sm:px-5 sm:py-6 sm:pb-6">
+    <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-3 pb-6 sm:px-5 sm:py-6">
       {/* Phones: slim bar with the schedule name and a week strip. Actions live in the bottom bar. */}
       <div className="sticky top-0 z-30 border-b border-border bg-sidebar/85 backdrop-blur-xl backdrop-saturate-150 sm:hidden">
         <div className="flex items-center gap-2.5 px-4 pb-1.5 pt-3">
@@ -221,6 +220,21 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
         </div>
       </header>
 
+      {/* Phones: the actions as plain buttons under the header. */}
+      <div className="grid gap-2 px-3 sm:hidden">
+        <Button onClick={addToMine} className="h-11 text-[15px]">
+          Agregar a mi horario
+        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={addToCompare} className="h-10">
+            Comparar con el mío
+          </Button>
+          <Button variant="outline" onClick={() => setMoreOpen(true)} className="h-10">
+            Más opciones
+          </Button>
+        </div>
+      </div>
+
       {compareMessage ? (
         <p role="status" className="text-[13px] font-medium text-sky max-sm:px-3">
           {compareMessage}
@@ -235,25 +249,6 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
 
       <ScheduleGrid days={days} courses={courses} focusKey={null} now={now} readOnly />
 
-      {/* Phones: the main action is always one thumb away. */}
-      <MobileBar>
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          <Button onClick={addToMine} className="h-11 flex-1 text-[15px]">
-            Agregar a mi horario
-          </Button>
-          <Button variant="outline" onClick={addToCompare} className="h-11 px-4 text-[15px]">
-            Comparar
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setMoreOpen(true)}
-            aria-label="Más opciones"
-            className="h-11 px-3.5 text-[15px]"
-          >
-            Más
-          </Button>
-        </div>
-      </MobileBar>
 
       <Modal
         open={moreOpen}
