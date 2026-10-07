@@ -36,7 +36,28 @@ export function Modal({ open, onClose, title, description, children, footer }: M
     document.body.style.overflow = "hidden"
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose()
+      if (event.key === "Escape") {
+        onClose()
+        return
+      }
+      if (event.key !== "Tab" || !panelRef.current) return
+
+      // Keep Tab inside the dialog.
+      const focusable = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(
+          'input:not([readonly]), select, textarea, button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((el) => el.offsetParent !== null)
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
     document.addEventListener("keydown", onKeyDown)
 
@@ -62,7 +83,8 @@ export function Modal({ open, onClose, title, description, children, footer }: M
         type="button"
         aria-label="Cerrar"
         onClick={onClose}
-        className="absolute inset-0 bg-foreground/40 backdrop-blur-sm animate-in fade-in"
+        tabIndex={-1}
+        className="absolute inset-0 bg-black/55 backdrop-blur-[3px] animate-in fade-in"
       />
 
       {/* Panel */}
@@ -72,15 +94,15 @@ export function Modal({ open, onClose, title, description, children, footer }: M
         aria-modal="true"
         aria-labelledby={titleId.current}
         aria-describedby={description ? descId.current : undefined}
-        className="relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl animate-in slide-in-from-bottom-4 sm:max-w-lg sm:rounded-2xl sm:zoom-in-95"
+        className="relative z-10 flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-xl border border-input bg-popover text-popover-foreground shadow-[0_24px_70px_rgb(0_0_0/0.6)] animate-in slide-in-from-bottom-4 sm:max-w-md sm:rounded-xl sm:zoom-in-95"
       >
-        <header className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
-          <div className="space-y-1">
-            <h2 id={titleId.current} className="font-heading text-lg font-semibold tracking-tight">
+        <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
+          <div className="space-y-0.5">
+            <h2 id={titleId.current} className="text-[15px] font-semibold tracking-tight">
               {title}
             </h2>
             {description ? (
-              <p id={descId.current} className="text-sm text-muted-foreground">
+              <p id={descId.current} className="text-[13px] text-muted-foreground text-pretty">
                 {description}
               </p>
             ) : null}
@@ -90,17 +112,17 @@ export function Modal({ open, onClose, title, description, children, footer }: M
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="-mr-2 shrink-0"
+            className="-mr-2 -mt-1 shrink-0"
             aria-label="Cerrar"
           >
             <X className="size-4" />
           </Button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
 
         {footer ? (
-          <footer className="border-t border-border px-6 py-4">{footer}</footer>
+          <footer className="border-t border-border px-5 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] sm:px-6">{footer}</footer>
         ) : null}
       </div>
     </div>,

@@ -31,17 +31,18 @@ export function pickNextColor(courses: Course[]): string {
 
 /**
  * Presentation-ready style values derived from a color's base hex.
- * Uses alpha compositing so the same color reads well on light and dark.
+ * Translucent fill + solid bar, with text lightened toward white so it
+ * stays readable on the dark grid.
  */
 export function colorStyles(hex: string) {
   return {
     /** Soft translucent fill for the block body. */
-    background: `${hex}1f`,
-    /** Slightly stronger tint for hover. */
-    backgroundHover: `${hex}30`,
+    background: `${hex}2b`,
     /** Solid accent used for the left bar and marker dot. */
     accent: hex,
     /** Subtle border. */
-    border: `${hex}59`,
+    border: `${hex}40`,
+    /** Readable text tone for titles and details. */
+    text: `color-mix(in srgb, ${hex} 45%, white)`,
   }
 }

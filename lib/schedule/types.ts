@@ -9,6 +9,9 @@
 /** Stable identifiers for the days of the week. */
 export type DayId = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN"
 
+/** How the grid is presented: every visible day, or a single selected day. */
+export type ViewMode = "week" | "day"
+
 /** A day descriptor used to render axes and labels. */
 export interface Day {
   id: DayId

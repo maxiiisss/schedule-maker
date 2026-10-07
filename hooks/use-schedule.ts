@@ -27,16 +27,20 @@ function createId(): string {
  * API layer later would not require touching the presentation components.
  */
 export function useSchedule(initial: Course[] = []) {
-  const [courses, setCourses] = useState<Course[]>(() => {
+  const [courses, setCourses] = useState<Course[]>(initial)
+  // Saved data is read after mount so server and client render the same markup.
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
     try {
-      const raw = typeof window !== 'undefined' ? window.localStorage.getItem('schedule:v1') : null
-      if (!raw) return initial
-      const parsed = JSON.parse(raw) as Course[]
-      return Array.isArray(parsed) ? parsed : initial
-    } catch (e) {
-      return initial
+      const raw = window.localStorage.getItem('schedule:v1')
+      const parsed = raw ? (JSON.parse(raw) as Course[]) : null
+      if (Array.isArray(parsed)) setCourses(parsed)
+    } catch {
+      // ignore unreadable storage and keep the initial schedule
     }
-  })
+    setHydrated(true)
+  }, [])
 
   const addCourse = useCallback(
     (draft: CourseDraft): MutationResult => {
@@ -108,18 +112,20 @@ export function useSchedule(initial: Course[] = []) {
     return DAYS.filter((day) => active.has(day.id))
   }, [courses])
 
-  // Persist schedule to localStorage whenever it changes.
+  // Persist schedule to localStorage whenever it changes (after the saved copy was read).
   useEffect(() => {
+    if (!hydrated) return
     try {
       const data = JSON.stringify(courses)
       window.localStorage.setItem('schedule:v1', data)
     } catch (e) {
       // ignore storage errors (e.g., quota) — keep app usable
     }
-  }, [courses])
+  }, [courses, hydrated])
 
   return {
     courses,
+    ready: hydrated,
     visibleDays,
     nextColor,
     addCourse,

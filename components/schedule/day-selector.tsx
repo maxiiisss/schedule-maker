@@ -21,7 +21,7 @@ export function DaySelector({ value, onChange, invalid }: DaySelectorProps) {
       role="group"
       aria-label="Días de la semana"
       className={cn(
-        "flex flex-wrap gap-1.5 rounded-lg",
+        "grid grid-cols-7 gap-1.5 rounded-md",
         invalid && "outline outline-2 outline-offset-4 outline-destructive/40",
       )}
     >
@@ -34,10 +34,10 @@ export function DaySelector({ value, onChange, invalid }: DaySelectorProps) {
             aria-pressed={active}
             onClick={() => toggle(day.id)}
             className={cn(
-              "min-w-11 rounded-lg border px-2.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "h-9 rounded-md border px-0 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
               active
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                ? "border-transparent bg-primary font-medium text-primary-foreground"
+                : "border-input bg-background text-muted-foreground hover:text-foreground",
             )}
           >
             {day.short}

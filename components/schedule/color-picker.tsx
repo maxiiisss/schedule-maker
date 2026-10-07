@@ -31,11 +31,11 @@ export function ColorPicker({ value, onChange, disabled = false }: ColorPickerPr
             onClick={() => onChange(color.id)}
             style={{ backgroundColor: color.hex }}
             className={cn(
-              "flex size-8 items-center justify-center rounded-full transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              active ? "scale-110 ring-2 ring-foreground ring-offset-2 ring-offset-background" : "hover:scale-105",
+              "flex size-7 items-center justify-center rounded-full transition-transform focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+              active ? "ring-2 ring-sky ring-offset-2 ring-offset-popover" : "hover:scale-110",
             )}
           >
-            {active ? <Check className="size-4 text-white" /> : null}
+            {active ? <Check className="size-3.5 text-black/70" strokeWidth={3} /> : null}
           </button>
         )
       })}
