@@ -4,9 +4,9 @@ import type { RefObject } from "react"
 import { useMemo } from "react"
 
 import { cn } from "@/lib/utils"
-import { END_HOUR, HOUR_HEIGHT, START_HOUR } from "@/lib/schedule/constants"
+import { HOUR_HEIGHT } from "@/lib/schedule/constants"
 import { layoutOverlappingBlocks } from "@/lib/schedule/layout"
-import { generateHourLabels, gridBodyHeight } from "@/lib/schedule/time"
+import { generateHourLabels, gridBodyHeight, hourRangeFor } from "@/lib/schedule/time"
 import type { FreeSlot, GridCourse } from "@/lib/schedule/compare"
 import type { Course, Day, DayId } from "@/lib/schedule/types"
 import { CourseBlock } from "./course-block"
@@ -35,7 +35,6 @@ interface ScheduleGridProps {
   gridRef?: RefObject<HTMLDivElement | null>
 }
 
-const HOUR_LABELS = generateHourLabels().slice(0, -1)
 const AXIS_WIDTH = 52
 /** Narrowest a day column may get before the grid scrolls sideways. */
 const MIN_COLUMN_WIDTH = 112
@@ -57,12 +56,15 @@ export function ScheduleGrid({
   readOnly = false,
   gridRef,
 }: ScheduleGridProps) {
-  const bodyHeight = gridBodyHeight()
+  // The grid shows 08:00-22:00 and grows to fit any course outside it.
+  const range = useMemo(() => hourRangeFor(courses), [courses])
+  const hourLabels = useMemo(() => generateHourLabels(range).slice(0, -1), [range])
+  const bodyHeight = gridBodyHeight(range)
   const columns = `${AXIS_WIDTH}px repeat(${days.length}, minmax(0, 1fr))`
 
   const nowOffset =
-    now && now.minutes >= START_HOUR * 60 && now.minutes < END_HOUR * 60
-      ? ((now.minutes - START_HOUR * 60) / 60) * HOUR_HEIGHT
+    now && now.minutes >= range.start * 60 && now.minutes < range.end * 60
+      ? ((now.minutes - range.start * 60) / 60) * HOUR_HEIGHT
       : null
 
   const layoutByDay = useMemo(() => {
@@ -117,7 +119,7 @@ export function ScheduleGrid({
 
           <div className="relative grid" style={{ gridTemplateColumns: columns, height: bodyHeight }}>
             <div aria-hidden>
-              {HOUR_LABELS.map((label, index) => (
+              {hourLabels.map((label, index) => (
                 <div key={label} style={{ height: HOUR_HEIGHT }} className="relative">
                   {index > 0 ? (
                     <span className="absolute -top-[7px] right-2 text-[11px] tabular-nums text-muted-foreground">
@@ -149,7 +151,7 @@ export function ScheduleGrid({
                   {freeSlots
                     ?.filter((slot) => slot.day === day.id)
                     .map((slot) => {
-                      const top = ((slot.start - START_HOUR * 60) / 60) * HOUR_HEIGHT
+                      const top = ((slot.start - range.start * 60) / 60) * HOUR_HEIGHT
                       const height = ((slot.end - slot.start) / 60) * HOUR_HEIGHT
                       return (
                         <div
@@ -167,6 +169,7 @@ export function ScheduleGrid({
                     <CourseBlock
                       key={`${day.id}-${course.id}`}
                       course={course}
+                      range={range}
                       dayLabel={day.label}
                       layout={dayLayout?.get(course.id) ?? { column: 0, totalColumns: 1 }}
                       state={

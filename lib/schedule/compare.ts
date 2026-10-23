@@ -1,5 +1,5 @@
-import { DAYS, END_HOUR, START_HOUR } from "./constants"
-import { timeToMinutes } from "./time"
+import { DAYS } from "./constants"
+import { hourRangeFor, timeToMinutes } from "./time"
 import type { Course, DayId } from "./types"
 
 /** Another person's schedule, kept on this device to compare with the user's own. */
@@ -71,8 +71,10 @@ export function commonFreeSlots(
   days: DayId[],
   minMinutes = 30,
 ): FreeSlot[] {
-  const from = START_HOUR * 60
-  const to = END_HOUR * 60
+  // Same window the grid draws, so a free band never sticks out of it.
+  const range = hourRangeFor(schedules.flat())
+  const from = range.start * 60
+  const to = range.end * 60
   const slots: FreeSlot[] = []
 
   for (const day of days) {

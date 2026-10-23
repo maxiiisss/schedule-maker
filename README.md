@@ -113,7 +113,7 @@ pnpm start
 ## 📝 Notas técnicas
 
 - El horario se persiste en `localStorage` con la clave `schedule:v1`
-- Los horarios deben estar dentro del rango 08:00 - 22:00
+- Un ramo puede tener cualquier hora del día (00:00 a 23:59), siempre que termine el mismo día. La grilla muestra de 08:00 a 22:00 y se amplía sola para incluir los ramos que queden fuera de esas horas
 - Soporta horas con minutos personalizados (no requiere intervalos fijos)
 - Los bloques superpuestos se distribuyen automáticamente en columnas
 
@@ -134,7 +134,7 @@ El botón **Comparar** permite ver tu horario junto al de otras personas y encon
 
 - Se agrega un horario pegando su enlace compartido, o con **Comparar con el mío** en la página `/v/<id>`. Se pueden comparar hasta 5 a la vez.
 - Cada persona tiene su color; los bloques de otras personas son de solo lectura. Se pueden renombrar, ocultar y quitar (con «Deshacer»).
-- Las **horas libres en común** se marcan en la grilla («Libres») y la barra indica el mejor hueco. Solo cuentan los días en que alguien tiene clases, y los huecos de al menos 30 minutos dentro de 08:00–22:00.
+- Las **horas libres en común** se marcan en la grilla («Libres») y la barra indica el mejor hueco. Solo cuentan los días en que alguien tiene clases, y los huecos de al menos 30 minutos dentro de las horas que muestra la grilla.
 - Los horarios de otras personas se guardan solo en este dispositivo (`schedule:people:v1`) y son una copia del momento en que se compartieron.
 
 ## 📄 Licencia

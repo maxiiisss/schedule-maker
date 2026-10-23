@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og"
 
 import { resolveColor } from "@/lib/schedule/colors"
-import { END_HOUR, START_HOUR } from "@/lib/schedule/constants"
 import { weekViewDays } from "@/lib/schedule/days"
 import { layoutOverlappingBlocks } from "@/lib/schedule/layout"
 import { timeToMinutes } from "@/lib/schedule/time"
@@ -29,10 +28,10 @@ export default async function Image({ params }: { params: Promise<{ id: string }
   // Show only the hours that are used (at least 6), so blocks stay large.
   const starts = courses.map((course) => timeToMinutes(course.start))
   const ends = courses.map((course) => timeToMinutes(course.end))
-  let fromHour = starts.length ? Math.max(START_HOUR, Math.floor(Math.min(...starts) / 60)) : START_HOUR
-  let toHour = ends.length ? Math.min(END_HOUR, Math.ceil(Math.max(...ends) / 60)) : END_HOUR
-  if (toHour - fromHour < 6) toHour = Math.min(END_HOUR, fromHour + 6)
-  if (toHour - fromHour < 6) fromHour = Math.max(START_HOUR, toHour - 6)
+  let fromHour = starts.length ? Math.floor(Math.min(...starts) / 60) : 8
+  let toHour = ends.length ? Math.ceil(Math.max(...ends) / 60) : 22
+  if (toHour - fromHour < 6) toHour = Math.min(24, fromHour + 6)
+  if (toHour - fromHour < 6) fromHour = Math.max(0, toHour - 6)
   const pxPerMinute = GRID_HEIGHT / ((toHour - fromHour) * 60)
 
   return new ImageResponse(

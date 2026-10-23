@@ -1,4 +1,4 @@
-import { isWithinGridBounds, timeToMinutes } from "./time"
+import { timeToMinutes } from "./time"
 import type { CourseDraft, ValidationError } from "./types"
 
 /** Check if a time string is in valid HH:mm format. */
@@ -35,11 +35,6 @@ export function validateCourseDraft(draft: CourseDraft): ValidationError[] {
     errors.push({
       field: "end",
       message: "La hora de término debe ser posterior a la de inicio.",
-    })
-  } else if (!isWithinGridBounds(draft.start, draft.end)) {
-    errors.push({
-      field: "end",
-      message: "El horario debe estar dentro del rango visible de la grilla.",
     })
   }
 
