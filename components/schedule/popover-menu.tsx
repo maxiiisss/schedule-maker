@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from "lucide-react"
 import { Check } from "lucide-react"
-import { createContext, useContext, useEffect, useRef } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -38,6 +38,15 @@ export function PopoverMenu({ open, onOpenChange, label, trigger, children, clas
   const wrapperRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+
+  // After closing, the panel stays mounted just long enough to play its exit animation.
+  const [exiting, setExiting] = useState(false)
+  useEffect(() => {
+    if (open) return
+    setExiting(true)
+    const timer = window.setTimeout(() => setExiting(false), 130)
+    return () => window.clearTimeout(timer)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -98,13 +107,15 @@ export function PopoverMenu({ open, onOpenChange, label, trigger, children, clas
         "aria-expanded": open,
       })}
 
-      {open ? (
+      {open || exiting ? (
         <CloseContext.Provider value={() => onOpenChange(false)}>
           <div
             ref={panelRef}
             role="menu"
             aria-label={label}
-            className="absolute right-0 top-full z-50 mt-1 max-h-[min(70svh,24rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-xl border border-input bg-popover p-1 shadow-[0_16px_40px_rgb(0_0_0/0.55)] animate-in fade-in zoom-in-95 duration-100"
+            data-state={open ? "open" : "closed"}
+            aria-hidden={open ? undefined : true}
+            className="menu-panel absolute right-0 top-full z-50 mt-1 max-h-[min(70svh,24rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-xl border border-input bg-popover p-1 shadow-[0_16px_40px_rgb(0_0_0/0.55)]"
           >
             {children}
           </div>
@@ -115,7 +126,7 @@ export function PopoverMenu({ open, onOpenChange, label, trigger, children, clas
 }
 
 const itemClass =
-  "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-[15px] transition-colors hover:bg-white/[0.06] focus-visible:bg-white/[0.08] focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+  "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-[15px] transition-[background-color,transform] duration-150 active:scale-[0.98] hover:bg-white/[0.06] focus-visible:bg-white/[0.08] focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
 
 interface MenuItemProps {
   label: string

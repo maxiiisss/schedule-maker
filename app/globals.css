@@ -101,7 +101,48 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
       transition-duration: 0.01ms !important;
     }
   }
 }
+
+/* Dropdown menus: the panel grows out of its button, then the options fade in one after another. */
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.94);
+  }
+}
+@keyframes menu-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+@keyframes menu-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+}
+
+.menu-panel {
+  transform-origin: top right;
+}
+.menu-panel[data-state="open"] {
+  animation: menu-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.menu-panel[data-state="closed"] {
+  animation: menu-out 120ms ease-in both;
+  pointer-events: none;
+}
+.menu-panel[data-state="open"] > * {
+  animation: menu-item-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.menu-panel[data-state="open"] > :nth-child(1) { animation-delay: 40ms; }
+.menu-panel[data-state="open"] > :nth-child(2) { animation-delay: 70ms; }
+.menu-panel[data-state="open"] > :nth-child(3) { animation-delay: 100ms; }
+.menu-panel[data-state="open"] > :nth-child(4) { animation-delay: 130ms; }
+.menu-panel[data-state="open"] > :nth-child(5) { animation-delay: 160ms; }
+.menu-panel[data-state="open"] > :nth-child(n + 6) { animation-delay: 190ms; }
