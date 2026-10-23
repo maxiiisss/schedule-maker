@@ -86,3 +86,37 @@ export function formatHoursShort(minutes: number): string {
   const text = Number.isInteger(hours) ? String(hours) : hours.toFixed(1).replace(".", ",")
   return `${text} h`
 }
+
+/**
+ * Turn what people type on a phone keypad into "HH:mm".
+ *
+ * The numeric keypad has no colon, so "1030", "930", "9", "10.30" and "10,30" are all
+ * accepted. Anything that cannot be read as a time is returned unchanged, so the form's
+ * validation still reports it instead of silently guessing.
+ */
+export function normalizeTimeInput(raw: string): string {
+  const text = raw.trim()
+  if (!text) return text
+
+  let hours: number
+  let minutes: number
+
+  const separated = text.match(/^(\d{1,2})\s*[:.,hH]\s*(\d{2})$/)
+  if (separated) {
+    hours = Number(separated[1])
+    minutes = Number(separated[2])
+  } else if (/^\d{1,2}$/.test(text)) {
+    // "9" or "10": a whole hour.
+    hours = Number(text)
+    minutes = 0
+  } else if (/^\d{3,4}$/.test(text)) {
+    // "930" or "1030": the last two digits are the minutes.
+    hours = Number(text.slice(0, -2))
+    minutes = Number(text.slice(-2))
+  } else {
+    return raw
+  }
+
+  if (hours > 23 || minutes > 59) return raw
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+}

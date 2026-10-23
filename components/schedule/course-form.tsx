@@ -5,6 +5,7 @@ import { useEffect, useState } from "react"
 
 import type { MutationResult } from "@/hooks/use-schedule"
 import type { CourseGroup } from "@/lib/schedule/courses"
+import { normalizeTimeInput } from "@/lib/schedule/time"
 import type { CourseDraft, DayId, ValidationError } from "@/lib/schedule/types"
 import { errorFor } from "@/lib/schedule/validation"
 import { ColorPicker } from "./color-picker"
@@ -101,9 +102,33 @@ export function CourseForm({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    const result = onSubmit(draft)
+    const tidy = { ...draft, start: normalizeTimeInput(draft.start), end: normalizeTimeInput(draft.end) }
+    setDraft(tidy)
+    const result = onSubmit(tidy)
     if (!result.ok) setErrors(result.errors)
   }
+
+  /**
+   * Props shared by both time fields. Phone keypads have no colon, so "1030" is turned into
+   * "10:30" as soon as four digits are typed, and any other shorthand ("930", "9", "10.30")
+   * when the field loses focus or the form is submitted.
+   */
+  const timeField = (key: "start" | "end", hint: "next" | "done") => ({
+    type: "text" as const,
+    // "decimal" shows digits plus a separator key on phones; the numeric pad has neither colon nor dot.
+    inputMode: "decimal" as const,
+    enterKeyHint: hint,
+    autoComplete: "off",
+    maxLength: 5,
+    value: draft[key],
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+      const typed = event.target.value.replace(/[^\d:.,hH]/g, "")
+      set(key, /^\d{4}$/.test(typed) ? normalizeTimeInput(typed) : typed)
+    },
+    onBlur: () => set(key, normalizeTimeInput(draft[key])),
+    "aria-invalid": Boolean(errorFor(errors, key)),
+    className: fieldClass,
+  })
 
   const formError = errorFor(errors, "form")
 
@@ -151,31 +176,11 @@ export function CourseForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Hora de inicio" htmlFor="course-start" error={errorFor(errors, "start")}>
-          <input
-            id="course-start"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="HH:mm (ej: 13:50)"
-            value={draft.start}
-            onChange={(e) => set("start", e.target.value)}
-            aria-invalid={Boolean(errorFor(errors, "start"))}
-            className={fieldClass}
-          />
+          <input id="course-start" placeholder="HH:mm (ej: 13:50)" {...timeField("start", "next")} />
         </Field>
 
         <Field label="Hora de término" htmlFor="course-end" error={errorFor(errors, "end")}>
-          <input
-            id="course-end"
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            placeholder="HH:mm (ej: 14:50)"
-            value={draft.end}
-            onChange={(e) => set("end", e.target.value)}
-            aria-invalid={Boolean(errorFor(errors, "end"))}
-            className={fieldClass}
-          />
+          <input id="course-end" placeholder="HH:mm (ej: 14:50)" {...timeField("end", "done")} />
         </Field>
       </div>
 

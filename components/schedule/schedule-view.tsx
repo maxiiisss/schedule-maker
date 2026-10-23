@@ -337,7 +337,7 @@ export function ScheduleView() {
 
       <div className="flex min-w-0 flex-col">
         {/* Phones: one 44 px row so the grid gets the screen. */}
-        <div className="sticky top-0 z-30 flex h-11 items-center justify-between border-b border-border bg-sidebar/80 pl-3 pr-1 backdrop-blur-xl backdrop-saturate-150 sm:hidden">
+        <div className="sticky top-0 z-30 flex h-11 items-center justify-between border-b border-border bg-sidebar/80 pl-3 pr-1 backdrop-blur-xl backdrop-saturate-150 roomy:hidden">
           <div className="flex min-w-0 items-center gap-2">
             <Logo className="size-7" />
             <span className="truncate text-[15px] font-semibold tracking-tight">ScheduleGrid</span>
@@ -425,7 +425,7 @@ export function ScheduleView() {
           </div>
         </div>
 
-        <header className="sticky top-0 z-30 hidden border-b border-border bg-sidebar/80 px-3 py-3 backdrop-blur-xl backdrop-saturate-150 sm:block sm:px-5">
+        <header className="sticky top-0 z-30 hidden border-b border-border bg-sidebar/80 px-3 py-3 backdrop-blur-xl backdrop-saturate-150 roomy:block roomy:px-5">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-2.5 xl:flex-nowrap">
             <div className="order-1 flex min-w-0 flex-1 items-center gap-2.5">
               <Logo className="lg:hidden" />
@@ -534,7 +534,7 @@ export function ScheduleView() {
 
         <CourseChips groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
-        <div className="flex flex-col gap-3 px-3 py-3 pb-24 sm:px-5 sm:py-5 sm:pb-5">
+        <div className="flex flex-col gap-3 px-3 py-3 pb-24 roomy:px-5 roomy:py-5 roomy:pb-5">
           {people.length > 0 ? (
             <CompareBar
               people={people}
@@ -548,7 +548,7 @@ export function ScheduleView() {
           {!viewReady ? (
             // Phones switch to the day view once the saved preference is read. Keep the row's
             // space until then so the grid does not jump down.
-            <div aria-hidden className="h-[50px] sm:hidden" />
+            <div aria-hidden className="h-[50px] roomy:hidden" />
           ) : mode === "day" ? (
             <DayTabs selected={selectedDay} today={todayId} busy={busyDays} onSelect={setSelectedDay} />
           ) : null}
@@ -659,7 +659,7 @@ export function ScheduleView() {
         aria-label="Agregar ramo"
         title="Agregar ramo"
         onClick={openCreate}
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_rgb(0_0_0/0.45)] transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:hidden"
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_rgb(0_0_0/0.45)] transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring roomy:hidden"
       >
         <Plus className="size-6" strokeWidth={2.25} aria-hidden />
       </button>

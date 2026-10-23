@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
+import { useScrollLock } from "@/hooks/use-scroll-lock"
 import { cn } from "@/lib/utils"
 
 interface ModalProps {
@@ -34,6 +35,9 @@ export function Modal({ open, onClose, title, description, children, footer }: M
   const [exiting, setExiting] = useState(false)
   const skipExit = useRef(false)
 
+  // Freeze the page behind the sheet, also on iOS where `overflow: hidden` is not enough.
+  useScrollLock(open)
+
   useEffect(() => {
     if (open) return
     if (skipExit.current) {
@@ -49,8 +53,6 @@ export function Modal({ open, onClose, title, description, children, footer }: M
     if (!open) return
 
     previouslyFocused.current = document.activeElement as HTMLElement | null
-    const { overflow } = document.body.style
-    document.body.style.overflow = "hidden"
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -86,7 +88,6 @@ export function Modal({ open, onClose, title, description, children, footer }: M
 
     return () => {
       document.removeEventListener("keydown", onKeyDown)
-      document.body.style.overflow = overflow
       previouslyFocused.current?.focus?.()
     }
   }, [open, onClose])
@@ -132,7 +133,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
   const closing = !open
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] sm:items-center">
       {/* Backdrop */}
       <button
         type="button"
@@ -140,7 +141,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
         onClick={onClose}
         tabIndex={-1}
         className={cn(
-          "absolute inset-0 bg-black/55 backdrop-blur-[3px] duration-200",
+          "absolute inset-0 touch-none bg-black/55 backdrop-blur-[3px] duration-200",
           closing ? "animate-out fade-out fill-mode-forwards" : "animate-in fade-in",
         )}
       />
@@ -194,7 +195,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
           </Button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
 
         {footer ? (
           <footer className="border-t border-border px-5 py-3.5 sm:px-6">{footer}</footer>
