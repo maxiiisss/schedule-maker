@@ -23,7 +23,7 @@ export const DAY_BY_ID: Record<DayId, Day> = DAYS.reduce(
   {} as Record<DayId, Day>,
 )
 
-/** Grid vertical bounds, in whole hours (24h). */
+/** Default visible hours (24h). The grid widens on its own for courses outside them. */
 export const START_HOUR = 8
 export const END_HOUR = 22
 
