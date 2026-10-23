@@ -4,6 +4,16 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * "roomy" = enough screen for the desktop and tablet layout. A phone held sideways is wide
+ * (up to ~930 px) but only ~400 px tall, so width alone would give it the desktop header and
+ * hide the floating + button. Phones, in either orientation, are everything that is not roomy.
+ */
+@custom-variant roomy (@media (min-width: 640px) and (not ((max-height: 500px) and (max-width: 1000px))));
+
+/* A phone held sideways: every pixel of height goes to the schedule. */
+@custom-variant short (@media (max-height: 500px) and (max-width: 1000px));
+
 @theme inline {
   --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', var(--font-inter), system-ui, sans-serif;
   --font-heading: var(--font-sans);
@@ -92,7 +102,14 @@
   html {
     -webkit-text-size-adjust: 100%;
   }
+  html {
+    /* Scroll and pan only: no pinch or double-tap zoom. */
+    touch-action: pan-x pan-y;
+  }
   body {
+    /* Keep content out from under the notch and rounded corners when the phone is sideways. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
     @apply bg-background text-foreground;
     font-variant-numeric: tabular-nums;
   }
@@ -146,3 +163,12 @@
 .menu-panel[data-state="open"] > :nth-child(4) { animation-delay: 130ms; }
 .menu-panel[data-state="open"] > :nth-child(5) { animation-delay: 160ms; }
 .menu-panel[data-state="open"] > :nth-child(n + 6) { animation-delay: 190ms; }
+
+/* iOS Safari zooms into any field smaller than 16 px when it gets focus. Phones only. */
+@media (max-width: 639px), (max-height: 500px) and (max-width: 1000px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
