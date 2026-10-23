@@ -120,7 +120,7 @@ export function ScheduleGrid({
               {HOUR_LABELS.map((label, index) => (
                 <div key={label} style={{ height: HOUR_HEIGHT }} className="relative">
                   {index > 0 ? (
-                    <span className="absolute -top-[7px] right-2 text-[11px] tabular-nums text-muted-foreground/80">
+                    <span className="absolute -top-[7px] right-2 text-[11px] tabular-nums text-muted-foreground">
                       {label}
                     </span>
                   ) : null}

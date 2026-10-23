@@ -38,6 +38,7 @@ import { MenuChoice, MenuItem, MenuSeparator, PopoverMenu } from "./popover-menu
 import { ScheduleGrid, type NowMarker } from "./schedule-grid"
 import { CourseChips, Logo, ScheduleSidebar } from "./schedule-sidebar"
 import { Segmented } from "./segmented"
+import { SkipLink } from "./skip-link"
 import { Toast } from "./toast"
 
 interface DialogState {
@@ -79,7 +80,15 @@ export function ScheduleView() {
   const gridRef = useRef<HTMLDivElement>(null)
   const importInputRef = useRef<HTMLInputElement>(null)
 
-  const { mode, setMode, includeWeekend, setIncludeWeekend, selectedDay, setSelectedDay } = useViewState()
+  const {
+    mode,
+    setMode,
+    includeWeekend,
+    setIncludeWeekend,
+    selectedDay,
+    setSelectedDay,
+    ready: viewReady,
+  } = useViewState()
   const nowDate = useNow()
   const {
     people,
@@ -321,6 +330,8 @@ export function ScheduleView() {
 
   return (
     <div className="min-h-svh lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
+      <SkipLink target="horario" />
+      <h1 className="sr-only">ScheduleGrid: tu horario semanal</h1>
       <ScheduleSidebar groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
       <div className="flex min-w-0 flex-col">
@@ -412,10 +423,10 @@ export function ScheduleView() {
             <div className="order-1 flex min-w-0 flex-1 items-center gap-2.5">
               <Logo className="lg:hidden" />
               <div className="hidden min-w-0 min-[480px]:block">
-                <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight">
+                <p className="truncate text-[15px] font-semibold leading-tight tracking-tight">
                   <span className="lg:hidden">ScheduleGrid</span>
                   <span className="hidden lg:inline">Mi horario</span>
-                </h1>
+                </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {courseGroups.length === 0
                     ? "Organiza tus ramos en una semana."
@@ -440,8 +451,8 @@ export function ScheduleView() {
                   value={includeWeekend || weekendLocked ? "full" : "work"}
                   onChange={(value) => setIncludeWeekend(value === "full")}
                   options={[
-                    { value: "work", label: "Lun–Vie", disabled: weekendLocked },
-                    { value: "full", label: "Lun–Dom" },
+                    { value: "work", label: "Lun a Vie", disabled: weekendLocked },
+                    { value: "full", label: "Lun a Dom" },
                   ]}
                 />
               ) : null}
@@ -480,7 +491,7 @@ export function ScheduleView() {
               <Button
                 variant="outline"
                 aria-label={comparing ? `Comparar horarios (${visiblePeople.length} activos)` : "Comparar horarios"}
-                title="Comparar"
+                title="Ver tu horario junto al de otras personas"
                 onClick={() => setCompareOpen(true)}
                 className={SOCIAL_BUTTON}
               >
@@ -495,7 +506,7 @@ export function ScheduleView() {
               <Button
                 variant="outline"
                 aria-label="Compartir horario"
-                title="Compartir"
+                title="Crear un enlace para enviar tu horario"
                 onClick={() => setShareOpen(true)}
                 className={SOCIAL_BUTTON}
               >
@@ -506,7 +517,7 @@ export function ScheduleView() {
               <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
 
               <Button onClick={openCreate} className="h-9 px-3.5">
-                <Plus className="size-4" />
+                <Plus className="size-4 transition-transform duration-200 group-hover/button:rotate-90" />
                 <span className="sm:hidden">Agregar</span>
                 <span className="hidden sm:inline">Agregar ramo</span>
               </Button>
@@ -517,8 +528,6 @@ export function ScheduleView() {
         <CourseChips groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
         <div className="flex flex-col gap-3 px-3 py-3 pb-24 sm:px-5 sm:py-5 sm:pb-5">
-          {ready && courses.length === 0 ? <EmptyState onAdd={openCreate} /> : null}
-
           {people.length > 0 ? (
             <CompareBar
               people={people}
@@ -529,21 +538,32 @@ export function ScheduleView() {
             />
           ) : null}
 
-          {mode === "day" ? (
+          {!viewReady ? (
+            // Phones switch to the day view once the saved preference is read. Keep the row's
+            // space until then so the grid does not jump down.
+            <div aria-hidden className="h-[50px] sm:hidden" />
+          ) : mode === "day" ? (
             <DayTabs selected={selectedDay} today={todayId} busy={busyDays} onSelect={setSelectedDay} />
           ) : null}
 
-          <ScheduleGrid
-            days={days}
-            courses={gridCourses}
-            freeSlots={freeSlots}
-            crowded={comparing}
-            focusKey={focusKey}
-            now={now}
-            onEditCourse={openEdit}
-            onDeleteCourse={handleDelete}
-            gridRef={gridRef}
-          />
+          <div id="horario" tabIndex={-1} className="relative outline-none">
+            <ScheduleGrid
+              days={days}
+              courses={gridCourses}
+              freeSlots={freeSlots}
+              crowded={comparing}
+              focusKey={focusKey}
+              now={now}
+              onEditCourse={openEdit}
+              onDeleteCourse={handleDelete}
+              gridRef={gridRef}
+            />
+            {ready && courses.length === 0 ? (
+              <div className="absolute inset-x-3 top-16 z-20 sm:inset-x-8">
+                <EmptyState onAdd={openCreate} />
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -668,7 +688,7 @@ function isCourse(value: unknown): value is Course {
 /** Friendly prompt shown when there are no courses yet. */
 function EmptyState({ onAdd }: { onAdd: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-input px-6 py-8 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-input bg-background/95 px-6 py-8 text-center shadow-[0_12px_40px_rgb(0_0_0/0.35)]">
       <span className="flex size-11 items-center justify-center rounded-full bg-accent text-sky">
         <CalendarPlus className="size-5" />
       </span>

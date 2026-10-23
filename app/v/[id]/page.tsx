@@ -17,8 +17,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const heading = shared?.name || "Horario compartido"
 
   return {
-    title: `${heading} · ScheduleGrid`,
+    title: heading,
     description: "Mira este horario semanal y crea el tuyo en ScheduleGrid.",
+    openGraph: {
+      title: heading,
+      description: "Mira este horario semanal y crea el tuyo en ScheduleGrid.",
+    },
     // Links are unlisted: keep them out of search results.
     robots: { index: false, follow: false },
   }
