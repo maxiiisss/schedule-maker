@@ -14,7 +14,6 @@ export const metadata: Metadata = {
   description:
     'Crea y organiza tu horario universitario con una grilla dinámica, gestión eficiente y colores automáticos.',
   generator: 'v0.app',
-  icons: '📅',
 }
 
 export const viewport: Viewport = {
