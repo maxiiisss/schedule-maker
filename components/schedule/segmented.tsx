@@ -45,7 +45,7 @@ export function Segmented<T extends string>({
             className={cn(
               "h-7 rounded-md px-3 text-[13px] whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
               active
-                ? "bg-[#3a3a42] font-medium text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.4),inset_0_0_0_1px_rgb(255_255_255/0.1)]"
+                ? "bg-[#3a3a42] font-medium text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.4),inset_0_0_0_1px_rgb(255_255_255/0.1)] hover:bg-[#46464e]"
                 : "text-muted-foreground hover:text-foreground",
               option.disabled && "pointer-events-auto cursor-not-allowed opacity-40 hover:text-muted-foreground",
             )}

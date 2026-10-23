@@ -8,6 +8,7 @@ import { DayTabs } from "@/components/schedule/day-tabs"
 import { ScheduleGrid, type NowMarker } from "@/components/schedule/schedule-grid"
 import { Logo } from "@/components/schedule/schedule-sidebar"
 import { Segmented } from "@/components/schedule/segmented"
+import { SkipLink } from "@/components/schedule/skip-link"
 import { Button } from "@/components/ui/button"
 import { useNow } from "@/hooks/use-now"
 import { useViewState } from "@/hooks/use-view-state"
@@ -120,6 +121,7 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-3 px-3 py-4 sm:px-5 sm:py-6">
+      <SkipLink target="horario" />
       <header className="flex flex-wrap items-center gap-x-3 gap-y-3">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <Logo />
@@ -189,7 +191,9 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
         <DayTabs selected={selectedDay} today={now?.dayId ?? null} busy={busyDays} onSelect={setSelectedDay} />
       ) : null}
 
-      <ScheduleGrid days={days} courses={courses} focusKey={null} now={now} readOnly />
+      <div id="horario" tabIndex={-1} className="outline-none">
+        <ScheduleGrid days={days} courses={courses} focusKey={null} now={now} readOnly />
+      </div>
     </div>
   )
 }

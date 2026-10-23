@@ -45,7 +45,7 @@ export function ScheduleSidebar({ groups, focusKey, onFocus }: CourseListProps) 
       </div>
 
       <section aria-labelledby="sidebar-courses">
-        <h2 id="sidebar-courses" className="px-2 pb-1.5 text-xs font-semibold text-muted-foreground/80">
+        <h2 id="sidebar-courses" className="px-2 pb-1.5 text-xs font-semibold text-muted-foreground">
           Mis ramos
         </h2>
         {groups.length === 0 ? (
@@ -109,7 +109,7 @@ export function CourseChips({ groups, focusKey, onFocus }: CourseListProps) {
   return (
     <ul
       aria-label="Mis ramos"
-      className="flex gap-1.5 overflow-x-auto px-3 pb-1 pt-3 sm:px-5 lg:hidden [scrollbar-width:none]"
+      className="flex gap-1.5 overflow-x-auto px-3 pb-1 pt-3 sm:px-5 lg:hidden short:hidden [scrollbar-width:none]"
     >
       {groups.map((group) => {
         const active = focusKey === group.key

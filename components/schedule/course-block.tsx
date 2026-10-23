@@ -5,12 +5,14 @@ import { MapPin, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { colorStyles, resolveColor } from "@/lib/schedule/colors"
 import type { BlockLayout } from "@/lib/schedule/layout"
-import { heightForRange, offsetForTime } from "@/lib/schedule/time"
+import { heightForRange, offsetForTime, type HourRange } from "@/lib/schedule/time"
 import type { GridCourse } from "@/lib/schedule/compare"
 import type { Course } from "@/lib/schedule/types"
 
 interface CourseBlockProps {
   course: GridCourse
+  /** Hours the grid shows; the block is placed relative to its first hour. */
+  range: HourRange
   dayLabel: string
   layout: BlockLayout
   /** "dimmed" fades the block while another ramo is spotlighted. */
@@ -29,6 +31,7 @@ const HORIZONTAL_INSET = 3
  */
 export function CourseBlock({
   course,
+  range,
   dayLabel,
   layout,
   state,
@@ -40,7 +43,7 @@ export function CourseBlock({
   const readOnly = readOnlyProp || Boolean(course.readOnly)
   const color = resolveColor(course.colorId)
   const styles = colorStyles(color.hex)
-  const top = offsetForTime(course.start)
+  const top = offsetForTime(course.start, range)
   const height = heightForRange(course.start, course.end)
   const showTime = height >= 46
   const showRoom = height >= 62 && course.room

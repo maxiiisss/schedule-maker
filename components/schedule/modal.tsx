@@ -1,10 +1,12 @@
 "use client"
 
 import { X } from "lucide-react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 
 import { Button } from "@/components/ui/button"
+import { useScrollLock } from "@/hooks/use-scroll-lock"
+import { cn } from "@/lib/utils"
 
 interface ModalProps {
   open: boolean
@@ -28,13 +30,29 @@ export function Modal({ open, onClose, title, description, children, footer }: M
   const titleId = useRef(`modal-title-${Math.random().toString(36).slice(2)}`)
   const descId = useRef(`modal-desc-${Math.random().toString(36).slice(2)}`)
   const drag = useRef<{ startY: number; startTime: number } | null>(null)
+  // After closing, keep the dialog mounted for its exit animation (not after a drag-dismiss,
+  // where the sheet is already off screen).
+  const [exiting, setExiting] = useState(false)
+  const skipExit = useRef(false)
+
+  // Freeze the page behind the sheet, also on iOS where `overflow: hidden` is not enough.
+  useScrollLock(open)
+
+  useEffect(() => {
+    if (open) return
+    if (skipExit.current) {
+      skipExit.current = false
+      return
+    }
+    setExiting(true)
+    const timer = window.setTimeout(() => setExiting(false), 200)
+    return () => window.clearTimeout(timer)
+  }, [open])
 
   useEffect(() => {
     if (!open) return
 
     previouslyFocused.current = document.activeElement as HTMLElement | null
-    const { overflow } = document.body.style
-    document.body.style.overflow = "hidden"
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -70,7 +88,6 @@ export function Modal({ open, onClose, title, description, children, footer }: M
 
     return () => {
       document.removeEventListener("keydown", onKeyDown)
-      document.body.style.overflow = overflow
       previouslyFocused.current?.focus?.()
     }
   }, [open, onClose])
@@ -103,6 +120,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
 
     const speed = distance / Math.max(1, event.timeStamp - current.startTime)
     if (event.type === "pointerup" && (distance > 96 || (distance > 40 && speed > 0.6))) {
+      skipExit.current = true
       onClose()
       return
     }
@@ -111,17 +129,21 @@ export function Modal({ open, onClose, title, description, children, footer }: M
     panel.style.transform = ""
   }
 
-  if (!open || typeof document === "undefined") return null
+  if ((!open && !exiting) || typeof document === "undefined") return null
+  const closing = !open
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] sm:items-center">
       {/* Backdrop */}
       <button
         type="button"
         aria-label="Cerrar"
         onClick={onClose}
         tabIndex={-1}
-        className="absolute inset-0 bg-black/55 backdrop-blur-[3px] animate-in fade-in"
+        className={cn(
+          "absolute inset-0 touch-none bg-black/55 backdrop-blur-[3px] duration-200",
+          closing ? "animate-out fade-out fill-mode-forwards" : "animate-in fade-in",
+        )}
       />
 
       {/* Panel */}
@@ -131,7 +153,12 @@ export function Modal({ open, onClose, title, description, children, footer }: M
         aria-modal="true"
         aria-labelledby={titleId.current}
         aria-describedby={description ? descId.current : undefined}
-        className="relative z-10 flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-xl border border-input bg-popover pb-[env(safe-area-inset-bottom)] text-popover-foreground shadow-[0_24px_70px_rgb(0_0_0/0.6)] animate-in slide-in-from-bottom-4 sm:max-w-md sm:rounded-xl sm:pb-0 sm:zoom-in-95"
+        className={cn(
+          "relative z-10 flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-xl border border-input bg-popover pb-[env(safe-area-inset-bottom)] text-popover-foreground shadow-[0_24px_70px_rgb(0_0_0/0.6)] ease-out sm:max-w-md sm:rounded-xl sm:pb-0",
+          closing
+            ? "animate-out fade-out slide-out-to-bottom duration-200 fill-mode-forwards sm:slide-out-to-bottom-2 sm:zoom-out-95 sm:duration-150"
+            : "animate-in fade-in slide-in-from-bottom duration-300 sm:slide-in-from-bottom-2 sm:zoom-in-95 sm:duration-200",
+        )}
       >
         {/* Handle: 36 x 4 px bar inside a 44 px touch area. Phones only. */}
         <div
@@ -168,7 +195,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
           </Button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
 
         {footer ? (
           <footer className="border-t border-border px-5 py-3.5 sm:px-6">{footer}</footer>

@@ -23,6 +23,8 @@ export function useViewState() {
   const [mode, setModeState] = useState<ViewMode>("week")
   const [includeWeekend, setIncludeWeekendState] = useState(false)
   const [selectedDay, setSelectedDay] = useState<DayId>("MON")
+  // True once the saved (or phone) default has been applied, so the layout can stop moving.
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     setSelectedDay(dayIdFromDate(new Date()))
@@ -32,12 +34,14 @@ export function useViewState() {
         const stored = JSON.parse(raw) as Partial<StoredView>
         if (stored.mode === "day" || stored.mode === "week") setModeState(stored.mode)
         if (typeof stored.includeWeekend === "boolean") setIncludeWeekendState(stored.includeWeekend)
+        setReady(true)
         return
       }
     } catch {
       // ignore unreadable storage
     }
     if (window.matchMedia("(max-width: 639px)").matches) setModeState("day")
+    setReady(true)
   }, [])
 
   const save = useCallback((next: StoredView) => {
@@ -64,5 +68,5 @@ export function useViewState() {
     [mode, save],
   )
 
-  return { mode, setMode, includeWeekend, setIncludeWeekend, selectedDay, setSelectedDay }
+  return { mode, setMode, includeWeekend, setIncludeWeekend, selectedDay, setSelectedDay, ready }
 }
