@@ -6,7 +6,6 @@ import {
   ChevronDown,
   FileJson,
   ImageDown,
-  Menu,
   Plus,
   Save,
   Share2,
@@ -24,6 +23,7 @@ import { useNow } from "@/hooks/use-now"
 import { usePeople } from "@/hooks/use-people"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useViewState } from "@/hooks/use-view-state"
+import { cn } from "@/lib/utils"
 import { bestFreeSlot, buildComparison, commonFreeSlots, MAX_PEOPLE } from "@/lib/schedule/compare"
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { getCourseGroups } from "@/lib/schedule/courses"
@@ -34,6 +34,7 @@ import { fetchShared, parseShareId } from "@/lib/share/client"
 import { CourseDialog } from "./course-dialog"
 import { DayTabs } from "./day-tabs"
 import { Modal } from "./modal"
+import { MenuIcon } from "./menu-icon"
 import { MenuChoice, MenuItem, MenuSeparator, PopoverMenu } from "./popover-menu"
 import { ScheduleGrid, type NowMarker } from "./schedule-grid"
 import { CourseChips, Logo, ScheduleSidebar } from "./schedule-sidebar"
@@ -356,7 +357,13 @@ export function ScheduleView() {
                 >
                   <span className="inline-flex h-8 items-center gap-1 rounded-full bg-muted pl-3 pr-2 text-[13px] font-medium group-focus-visible:outline-2 group-focus-visible:outline-ring">
                     {mode === "week" ? "Semana" : "Día"}
-                    <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+                    <ChevronDown
+                      className={cn(
+                        "size-4 text-muted-foreground transition-transform duration-200",
+                        props["aria-expanded"] && "rotate-180",
+                      )}
+                      aria-hidden
+                    />
                   </span>
                 </button>
               )}
@@ -388,7 +395,7 @@ export function ScheduleView() {
                   aria-label="Menú"
                   className="grid size-11 place-items-center rounded-lg text-foreground focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-ring"
                 >
-                  <Menu className="size-5" aria-hidden />
+                  <MenuIcon open={props["aria-expanded"]} />
                 </button>
               )}
             >
