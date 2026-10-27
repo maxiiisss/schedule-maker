@@ -6,7 +6,7 @@ import { layoutOverlappingBlocks } from "@/lib/schedule/layout"
 import { timeToMinutes } from "@/lib/schedule/time"
 import { loadShared } from "@/lib/share/load"
 
-export const alt = "Horario compartido en ScheduleGrid"
+export const alt = "Horario compartido en Sin Topes"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 export const dynamic = "force-dynamic"
@@ -58,7 +58,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           />
           <div style={{ display: "flex", fontSize: 38, fontWeight: 600 }}>{title}</div>
           <div style={{ display: "flex", marginLeft: "auto", fontSize: 24, color: "#a1a1ab" }}>
-            ScheduleGrid
+            Sin Topes
           </div>
         </div>
 
