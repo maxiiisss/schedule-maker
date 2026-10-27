@@ -1,6 +1,6 @@
-# ScheduleGrid
+# Sin Topes
 
-Planificador de horarios semanales para estudiantes universitarios. Armas tu semana en una grilla, la guardas en tu dispositivo, la compartes con un enlace corto y la comparas con la de tus compañeros para encontrar las horas en que todos están libres.
+Planificador de horarios semanales para estudiantes universitarios. En Chile, un «tope» es el choque entre dos ramos que caen a la misma hora: la idea es armar la semana sin ninguno. Pones tus ramos en una grilla, la guardas en tu dispositivo, la compartes con un enlace corto y la comparas con la de tus compañeros para encontrar las horas en que todos están libres.
 
 **En producción:** <https://schedule-maker-gray.vercel.app>
 

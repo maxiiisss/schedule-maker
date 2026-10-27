@@ -287,7 +287,7 @@ export function ScheduleView() {
     if (!id) {
       return {
         ok: false,
-        message: "Ese no parece un enlace de ScheduleGrid. Pega el enlace completo que te enviaron.",
+        message: "Ese no parece un enlace de Sin Topes. Pega el enlace completo que te enviaron.",
       }
     }
 
@@ -332,7 +332,7 @@ export function ScheduleView() {
   return (
     <div className="min-h-svh lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
       <SkipLink target="horario" />
-      <h1 className="sr-only">ScheduleGrid: tu horario semanal</h1>
+      <h1 className="sr-only">Sin Topes: tu horario semanal</h1>
       <ScheduleSidebar groups={courseGroups} focusKey={focusKey} onFocus={setFocusKey} />
 
       <div className="flex min-w-0 flex-col">
@@ -340,7 +340,7 @@ export function ScheduleView() {
         <div className="sticky top-0 z-30 flex h-11 items-center justify-between border-b border-border bg-sidebar/80 pl-3 pr-1 backdrop-blur-xl backdrop-saturate-150 roomy:hidden">
           <div className="flex min-w-0 items-center gap-2">
             <Logo className="size-7" />
-            <span className="truncate text-[15px] font-semibold tracking-tight">ScheduleGrid</span>
+            <span className="truncate text-[15px] font-semibold tracking-tight">Sin Topes</span>
           </div>
 
           <div className="flex items-center">
@@ -431,7 +431,7 @@ export function ScheduleView() {
               <Logo className="lg:hidden" />
               <div className="hidden min-w-0 min-[480px]:block">
                 <p className="truncate text-[15px] font-semibold leading-tight tracking-tight">
-                  <span className="lg:hidden">ScheduleGrid</span>
+                  <span className="lg:hidden">Sin Topes</span>
                   <span className="hidden lg:inline">Mi horario</span>
                 </p>
                 <p className="truncate text-xs text-muted-foreground">

@@ -18,10 +18,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: heading,
-    description: "Mira este horario semanal y crea el tuyo en ScheduleGrid.",
+    description: "Mira este horario semanal y arma el tuyo sin topes en Sin Topes.",
     openGraph: {
       title: heading,
-      description: "Mira este horario semanal y crea el tuyo en ScheduleGrid.",
+      description: "Mira este horario semanal y arma el tuyo sin topes en Sin Topes.",
     },
     // Links are unlisted: keep them out of search results.
     robots: { index: false, follow: false },

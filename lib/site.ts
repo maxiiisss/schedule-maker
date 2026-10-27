@@ -6,7 +6,7 @@ export const SITE_URL = process.env.VERCEL_PROJECT_PRODUCTION_URL
   ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
   : "http://localhost:3000"
 
-export const SITE_NAME = "ScheduleGrid"
-export const SITE_TITLE = "ScheduleGrid - Planificador de Horarios"
+export const SITE_NAME = "Sin Topes"
+export const SITE_TITLE = "Sin Topes - Planificador de Horarios"
 export const SITE_DESCRIPTION =
-  "Crea y organiza tu horario universitario con una grilla dinámica, gestión eficiente y colores automáticos."
+  "Arma tu horario universitario sin topes: grilla semanal, enlaces para compartirlo y comparación de horas libres con tus compañeros."

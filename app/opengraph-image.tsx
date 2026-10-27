@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og"
 
-export const alt = "ScheduleGrid: tu horario de la semana en una grilla"
+export const alt = "Sin Topes: tu horario de la semana, sin topes"
 export const size = { width: 1200, height: 630 }
 export const contentType = "image/png"
 
@@ -47,10 +47,10 @@ export default function Image() {
               <div style={{ width: 38, height: 11, borderRadius: 6, background: "#ffffff" }} />
             </div>
           </div>
-          <div style={{ display: "flex", fontSize: 84, fontWeight: 700, letterSpacing: -2 }}>ScheduleGrid</div>
+          <div style={{ display: "flex", fontSize: 84, fontWeight: 700, letterSpacing: -2 }}>Sin Topes</div>
         </div>
         <div style={{ display: "flex", fontSize: 44, color: "#a1a1ab", maxWidth: 900 }}>
-          Tu horario de la semana en una grilla. Compártelo y compáralo con tus compañeros.
+          Tu horario de la semana, sin topes. Compártelo y compáralo con tus compañeros.
         </div>
       </div>
     ),
