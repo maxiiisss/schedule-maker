@@ -19,7 +19,8 @@ interface CourseDialogProps {
   initialDraft: CourseDraft
   existingGroups?: CourseGroup[]
   onClose: () => void
-  onSubmit: (draft: CourseDraft) => MutationResult
+  /** Receives one draft per time slot (always one when editing). */
+  onSubmit: (drafts: CourseDraft[]) => MutationResult
   /** Only used when editing: removes the block being edited. */
   onDelete?: () => void
 }
@@ -52,7 +53,7 @@ export function CourseDialog({
         isEdit
           ? "Cambia el horario, la sala o el color de este bloque."
           : slotFor
-            ? `Agrega otro horario a «${slotFor}».`
+            ? `Agrega uno o más horarios a «${slotFor}».`
             : existingGroups.length > 0
               ? "Crea un ramo nuevo o agrega otro horario a uno que ya tienes."
               : "Completa los datos para agregar un nuevo ramo a tu horario."

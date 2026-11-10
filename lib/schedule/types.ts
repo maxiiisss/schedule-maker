@@ -65,4 +65,6 @@ export interface CourseDraft {
 export interface ValidationError {
   field: keyof CourseDraft | "form"
   message: string
+  /** Index of the time slot the issue belongs to, when a ramo is created with several. */
+  slot?: number
 }

@@ -61,7 +61,7 @@ export function ScheduleView() {
     courses,
     ready,
     nextColor,
-    addCourse,
+    addCourses,
     updateCourse,
     removeCourse,
     clearAll,
@@ -195,23 +195,26 @@ export function ScheduleView() {
 
   const close = () => setDialog((prev) => ({ ...prev, open: false }))
 
-  const handleSubmit = (draft: CourseDraft) => {
+  const handleSubmit = (drafts: CourseDraft[]) => {
+    const [first] = drafts
     const result =
       dialog.mode === "edit" && dialog.editingId
-        ? updateCourse(dialog.editingId, draft)
-        : addCourse(draft)
+        ? updateCourse(dialog.editingId, first)
+        : addCourses(drafts)
     if (result.ok) {
       close()
+      const count = drafts.length
       const isNewSlot =
         dialog.mode === "create" &&
-        courseGroups.some((group) => group.key === draft.title.trim().toLowerCase())
-      showToast(
-        dialog.mode === "edit"
-          ? "Cambios guardados."
-          : isNewSlot
-            ? `Horario agregado a «${draft.title.trim()}».`
-            : "Ramo agregado.",
-      )
+        courseGroups.some((group) => group.key === first.title.trim().toLowerCase())
+      if (dialog.mode === "edit") showToast("Cambios guardados.")
+      else if (isNewSlot)
+        showToast(
+          count === 1
+            ? `Horario agregado a «${first.title.trim()}».`
+            : `${count} horarios agregados a «${first.title.trim()}».`,
+        )
+      else showToast(count === 1 ? "Ramo agregado." : `Ramo agregado con ${count} horarios.`)
     }
     return result
   }
