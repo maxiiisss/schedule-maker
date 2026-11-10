@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 
-const bar = "absolute left-0 h-0.5 w-5 rounded-full bg-current transition-all duration-200 ease-out"
+const bar = "absolute left-0 h-0.5 w-5 rounded-full bg-current transition-[top,rotate,scale,opacity] duration-200 ease-out"
 
 /** Three lines that turn into a cross while the menu is open. */
 export function MenuIcon({ open }: { open: boolean }) {

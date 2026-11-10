@@ -27,7 +27,6 @@ export function DayTabs({ selected, today, busy, onSelect }: DayTabsProps) {
             key={day.id}
             type="button"
             aria-pressed={active}
-            aria-label={`${day.label}${day.id === today ? " (hoy)" : ""}${busy.has(day.id) ? ", con clases" : ""}`}
             onClick={() => onSelect(day.id)}
             className={cn(
               "relative flex h-10 flex-col items-center justify-center rounded-lg text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
@@ -39,6 +38,8 @@ export function DayTabs({ selected, today, busy, onSelect }: DayTabsProps) {
           >
             <span className="sm:hidden">{day.short}</span>
             <span className="hidden sm:inline">{day.label}</span>
+            {day.id === today ? <span className="sr-only"> (hoy)</span> : null}
+            {busy.has(day.id) ? <span className="sr-only">, con clases</span> : null}
             <span
               aria-hidden
               className={cn(

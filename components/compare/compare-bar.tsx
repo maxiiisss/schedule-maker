@@ -56,7 +56,7 @@ export function CompareBar({ people, showFree, onShowFreeChange, bestSlot, onMan
         >
           <span
             className={cn(
-              "absolute top-0.5 size-3 rounded-full bg-white transition-all",
+              "absolute top-0.5 size-3 rounded-full bg-white transition-[left]",
               showFree ? "left-[17px]" : "left-0.5",
             )}
           />
@@ -80,7 +80,7 @@ export function CompareBar({ people, showFree, onShowFreeChange, bestSlot, onMan
         ) : null}
       </p>
 
-      <Button variant="ghost" onClick={onManage} className="h-8 px-2.5">
+      <Button variant="ghost" onClick={onManage} className="h-10 px-2.5 roomy:h-8">
         <Settings2 className="size-4" />
         Administrar
       </Button>

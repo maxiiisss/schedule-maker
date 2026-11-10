@@ -52,68 +52,87 @@ export function CourseBlock({
   const left = `calc(${layout.column * columnWidth}% + ${HORIZONTAL_INSET}px)`
   const width = `calc(${columnWidth}% - ${HORIZONTAL_INSET * 2}px)`
 
+  // The accessible name starts with the visible text, in the same order (WCAG 2.5.3 "Label in Name"),
+  // and appends what is hidden at this height plus the day and the action.
+  const showOwner = Boolean(course.owner) && height >= 46
+  const label = [
+    course.title,
+    showOwner ? course.owner : null,
+    showTime ? `${course.start} – ${course.end}` : null,
+    showRoom ? course.room : null,
+    !showOwner ? course.owner : null,
+    !showTime ? `${course.start} – ${course.end}` : null,
+    !showRoom ? course.room : null,
+    dayLabel,
+    readOnly ? null : "Editar",
+  ]
+    .filter(Boolean)
+    .join(" ")
+
+  // The delete button is a sibling of the editable block, not a child: a button inside role="button"
+  // is invalid and confuses screen readers.
   return (
     <div
-      role={readOnly ? "group" : "button"}
-      title={`${course.owner ? `${course.owner}: ` : ""}${course.title} · ${course.start}–${course.end}${course.room ? ` · ${course.room}` : ""}`}
-      tabIndex={readOnly ? undefined : 0}
-      aria-label={`${course.owner ? `${course.owner}: ` : ""}${course.title}, ${dayLabel} de ${course.start} a ${course.end}${course.room ? `, ${course.room}` : ""}${readOnly ? "" : ". Editar"}`}
-      onClick={readOnly ? undefined : () => onEdit?.(course)}
-      onKeyDown={
-        readOnly
-          ? undefined
-          : (e) => {
-              if (e.target !== e.currentTarget) return
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault()
-                onEdit?.(course)
-              }
-            }
-      }
-      style={{
-        top: top + 1,
-        left,
-        width,
-        height: Math.max(height - 3, 22),
-        backgroundColor: styles.background,
-        borderColor: styles.border,
-        borderLeftColor: styles.accent,
-        color: styles.text,
-      }}
-      className={cn(
-        "group absolute flex flex-col gap-0.5 overflow-hidden rounded-md border border-l-[3px] px-2 py-1 text-left transition-[filter,opacity] hover:z-20 hover:brightness-125 focus-visible:z-20 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
-        state === "dimmed" && "opacity-25",
-        state === "focused" && "ring-1 ring-white/50",
-      )}
+      style={{ top: top + 1, left, width, height: Math.max(height - 3, 22) }}
+      className="group absolute hover:z-20 focus-within:z-20"
     >
-      <p className="truncate pr-4 text-[12.5px] font-semibold leading-tight" title={course.title}>
-        {course.title}
-      </p>
+      <div
+        role={readOnly ? "group" : "button"}
+        title={`${course.owner ? `${course.owner}: ` : ""}${course.title} · ${course.start}–${course.end}${course.room ? ` · ${course.room}` : ""}`}
+        tabIndex={readOnly ? undefined : 0}
+        aria-label={label}
+        onClick={readOnly ? undefined : () => onEdit?.(course)}
+        onKeyDown={
+          readOnly
+            ? undefined
+            : (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  onEdit?.(course)
+                }
+              }
+        }
+        style={{
+          backgroundColor: styles.background,
+          borderColor: styles.border,
+          borderLeftColor: styles.accent,
+          color: styles.text,
+        }}
+        className={cn(
+          "absolute inset-0 flex flex-col gap-0.5 overflow-hidden rounded-md border border-l-[3px] px-2 py-1 text-left transition-[filter,opacity] group-hover:brightness-125 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+          state === "dimmed" && "opacity-25",
+          state === "focused" && "ring-1 ring-white/50",
+        )}
+      >
+        <p className="truncate pr-4 text-[12.5px] font-semibold leading-tight" title={course.title}>
+          {course.title}
+        </p>
+        {" "}
 
-      {course.owner && height >= 46 ? (
-        <p className="truncate text-[11.5px] font-medium leading-tight opacity-90">{course.owner}</p>
-      ) : null}
-      {showTime ? (
-        <p className="truncate text-[11.5px] leading-tight tabular-nums opacity-80">
-          {course.start} – {course.end}
-        </p>
-      ) : null}
-      {showRoom ? (
-        <p className="flex items-center gap-1 truncate text-[11.5px] leading-tight opacity-80">
-          <MapPin className="size-3 shrink-0" />
-          <span className="truncate">{course.room}</span>
-        </p>
-      ) : null}
+        {course.owner && height >= 46 ? (
+          <p className="truncate text-[11.5px] font-medium leading-tight opacity-90">{course.owner}</p>
+        ) : null}
+        {" "}
+        {showTime ? (
+          <p className="truncate text-[11.5px] leading-tight tabular-nums opacity-80">
+            {course.start} – {course.end}
+          </p>
+        ) : null}
+        {" "}
+        {showRoom ? (
+          <p className="flex items-center gap-1 truncate text-[11.5px] leading-tight opacity-80">
+            <MapPin className="size-3 shrink-0" />
+            <span className="truncate">{course.room}</span>
+          </p>
+        ) : null}
+      </div>
 
       {readOnly ? null : (
         <button
           type="button"
           aria-label={`Eliminar ${course.title}`}
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete?.(course.id)
-          }}
-          className="absolute right-1 top-1 hidden size-[18px] place-items-center rounded bg-black/40 text-white transition-colors hover:bg-destructive focus-visible:outline-2 focus-visible:outline-ring group-focus-within:grid [@media(hover:hover)]:group-hover:grid"
+          onClick={() => onDelete?.(course.id)}
+          className="absolute right-1 top-1 z-10 hidden size-[18px] place-items-center rounded bg-black/40 text-white transition-colors after:absolute after:-inset-2 after:content-[''] hover:bg-destructive focus-visible:outline-2 focus-visible:outline-ring group-focus-within:grid [@media(hover:hover)]:group-hover:grid"
         >
           <X className="size-3" />
         </button>
