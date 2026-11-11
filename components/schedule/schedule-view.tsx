@@ -1,6 +1,5 @@
 "use client"
 
-import { toPng } from "html-to-image"
 import {
   CalendarPlus,
   ChevronDown,
@@ -49,7 +48,7 @@ interface DialogState {
   session: number
 }
 
-/** Celeste outline for the actions that involve other people, so they stand apart from Guardar. */
+/** Celeste outline for the actions that involve other people, so they stand apart from Exportar. */
 const SOCIAL_BUTTON =
   "h-9 border-sky/40 bg-sky/10 px-2.5 text-sky hover:bg-sky/20 hover:text-sky aria-expanded:bg-sky/20 sm:px-3"
 
@@ -255,6 +254,7 @@ export function ScheduleView() {
   const handleCapture = async () => {
     if (!gridRef.current) return
     try {
+      const { toPng } = await import("html-to-image")
       const dataUrl = await toPng(gridRef.current, {
         pixelRatio: 2,
         cacheBust: true,
@@ -412,7 +412,7 @@ export function ScheduleView() {
               <MenuItem icon={Share2} tone="sky" label="Compartir" onSelect={() => setShareOpen(true)} />
               <MenuItem
                 icon={Save}
-                label="Guardar"
+                label="Exportar"
                 onSelect={() => {
                   setSaveMessage(null)
                   setSaveOpen(true)
@@ -484,8 +484,8 @@ export function ScheduleView() {
               ) : null}
               <Button
                 variant="outline"
-                aria-label="Guardar horario"
-                title="Guardar"
+                aria-label="Exportar horario"
+                title="Exportar o respaldar"
                 onClick={() => {
                   setSaveMessage(null)
                   setSaveOpen(true)
@@ -493,20 +493,21 @@ export function ScheduleView() {
                 className="h-9 px-2.5 sm:px-3"
               >
                 <Save className="size-4" />
-                <span className="hidden sm:inline">Guardar</span>
+                <span className="hidden sm:inline">Exportar</span>
               </Button>
 
               <span aria-hidden className="mx-0.5 h-5 w-px bg-border" />
 
               <Button
                 variant="outline"
-                aria-label={comparing ? `Comparar horarios (${visiblePeople.length} activos)` : "Comparar horarios"}
+                aria-label={comparing ? `Comparar ${visiblePeople.length} activos` : "Comparar"}
                 title="Ver tu horario junto al de otras personas"
                 onClick={() => setCompareOpen(true)}
                 className={SOCIAL_BUTTON}
               >
                 <Users className="size-4" />
                 <span className="hidden sm:inline">Comparar</span>
+                {" "}
                 {comparing ? (
                   <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-sky px-1 text-[11px] font-semibold text-[#06222e]">
                     {visiblePeople.length}
@@ -607,8 +608,8 @@ export function ScheduleView() {
       <Modal
         open={saveOpen}
         onClose={() => setSaveOpen(false)}
-        title="Guardar horario"
-        description="Conserva tu horario en este dispositivo o descarga una copia."
+        title="Exportar horario"
+        description="Descarga una copia de tu horario o restáurala desde un respaldo."
       >
         <div className="grid gap-2">
           <Button variant="outline" onClick={handleCapture} className="h-10 justify-start px-3.5">
@@ -662,7 +663,7 @@ export function ScheduleView() {
         aria-label="Agregar ramo"
         title="Agregar ramo"
         onClick={openCreate}
-        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_rgb(0_0_0/0.45)] transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring roomy:hidden"
+        className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-40 grid size-14 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_6px_20px_rgb(0_0_0/0.45)] transition-transform active:scale-[0.96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring roomy:hidden"
       >
         <Plus className="size-6" strokeWidth={2.25} aria-hidden />
       </button>

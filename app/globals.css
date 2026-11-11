@@ -113,14 +113,35 @@
     @apply bg-background text-foreground;
     font-variant-numeric: tabular-nums;
   }
+  /* Reduced motion: fades stay, anything that slides, scales or rotates is switched off. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
-      animation-duration: 0.01ms !important;
-      animation-delay: 0ms !important;
-      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+      transition-property: color, background-color, border-color, opacity, box-shadow !important;
     }
+    .menu-panel[data-state] {
+      animation-name: menu-fade !important;
+      animation-delay: 0ms !important;
+    }
+    .menu-panel[data-state="closed"] {
+      animation-name: menu-fade-out !important;
+    }
+    .menu-panel[data-state="open"] > * {
+      animation: none !important;
+    }
+  }
+}
+
+@keyframes menu-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes menu-fade-out {
+  to {
+    opacity: 0;
   }
 }
 
