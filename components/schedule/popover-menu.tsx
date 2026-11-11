@@ -126,7 +126,7 @@ export function PopoverMenu({ open, onOpenChange, label, trigger, children, clas
 }
 
 const itemClass =
-  "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-[15px] transition-[background-color,transform] duration-150 active:scale-[0.98] hover:bg-white/[0.06] focus-visible:bg-white/[0.08] focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+  "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-[15px] transition-[background-color,transform] duration-150 active:scale-[0.96] hover:bg-white/[0.06] focus-visible:bg-white/[0.08] focus-visible:outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
 
 interface MenuItemProps {
   label: string

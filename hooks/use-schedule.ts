@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { pickNextColor } from "@/lib/schedule/colors"
 import { DAYS, DEFAULT_DAY_IDS } from "@/lib/schedule/constants"
 import type { Course, CourseDraft, Day, ValidationError } from "@/lib/schedule/types"
-import { validateCourseDraft } from "@/lib/schedule/validation"
+import { validateCourseDraft, validateCourseDrafts } from "@/lib/schedule/validation"
 
 /** Result of a mutation attempt. */
 export interface MutationResult {
@@ -42,21 +42,23 @@ export function useSchedule(initial: Course[] = []) {
     setHydrated(true)
   }, [])
 
-  const addCourse = useCallback(
-    (draft: CourseDraft): MutationResult => {
-      const errors = validateCourseDraft(draft)
+  /** Adds one block per draft (one per time slot). Nothing is added unless every draft is valid. */
+  const addCourses = useCallback(
+    (drafts: CourseDraft[]): MutationResult => {
+      const errors = validateCourseDrafts(drafts)
       if (errors.length > 0) return { ok: false, errors }
 
-      const course: Course = {
+      const colorId = drafts[0].colorId || pickNextColor(courses)
+      const created: Course[] = drafts.map((draft) => ({
         id: createId(),
         title: draft.title.trim(),
         room: draft.room.trim(),
         start: draft.start,
         end: draft.end,
         days: draft.days,
-        colorId: draft.colorId || pickNextColor(courses),
-      }
-      setCourses((prev) => [...prev, course])
+        colorId,
+      }))
+      setCourses((prev) => [...prev, ...created])
       return { ok: true, errors: [] }
     },
     [courses],
@@ -128,7 +130,7 @@ export function useSchedule(initial: Course[] = []) {
     ready: hydrated,
     visibleDays,
     nextColor,
-    addCourse,
+    addCourses,
     updateCourse,
     removeCourse,
     clearAll,

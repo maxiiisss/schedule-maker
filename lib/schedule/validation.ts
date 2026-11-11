@@ -41,10 +41,33 @@ export function validateCourseDraft(draft: CourseDraft): ValidationError[] {
   return errors
 }
 
+/**
+ * Validate the drafts of one ramo with several time slots. The title is checked once;
+ * every other issue carries the index of the slot it belongs to.
+ */
+export function validateCourseDrafts(drafts: CourseDraft[]): ValidationError[] {
+  if (drafts.length === 0) {
+    return [{ field: "form", message: "Agrega al menos un horario." }]
+  }
+
+  const errors: ValidationError[] = []
+  drafts.forEach((draft, slot) => {
+    for (const error of validateCourseDraft(draft)) {
+      if (error.field === "title") {
+        if (slot === 0) errors.push(error)
+      } else {
+        errors.push({ ...error, slot })
+      }
+    }
+  })
+  return errors
+}
+
 /** Convenience helper to read a field's message from an error list. */
 export function errorFor(
   errors: ValidationError[],
   field: ValidationError["field"],
+  slot?: number,
 ): string | undefined {
-  return errors.find((error) => error.field === field)?.message
+  return errors.find((error) => error.field === field && error.slot === slot)?.message
 }

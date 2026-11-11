@@ -1,6 +1,6 @@
 # Comandos disponibles
 
-Guía de comandos para desarrollar y desplegar **ScheduleGrid**.
+Guía de comandos para desarrollar y desplegar **Sin Topes**.
 
 ## 📦 Instalación
 

@@ -1,8 +1,9 @@
 "use client"
 
-import { AlertCircle } from "lucide-react"
-import { useEffect, useState } from "react"
+import { AlertCircle, Plus, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 
+import { Button } from "@/components/ui/button"
 import type { MutationResult } from "@/hooks/use-schedule"
 import type { CourseGroup } from "@/lib/schedule/courses"
 import { normalizeTimeInput } from "@/lib/schedule/time"
@@ -15,12 +16,19 @@ import { CoursePicker, SlotSummary } from "./course-picker"
 const fieldClass =
   "h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground tabular-nums transition-colors placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/25 aria-[invalid=true]:border-destructive"
 
+/** When and where a ramo meets: one day selection sharing a single time range. */
+type SlotValues = Pick<CourseDraft, "room" | "start" | "end" | "days">
+type SlotState = SlotValues & { key: number }
+
+const MAX_SLOTS = 8
+
 interface CourseFormProps {
   formId: string
   mode: "create" | "edit"
   initialDraft: CourseDraft
   existingGroups?: CourseGroup[]
-  onSubmit: (draft: CourseDraft) => MutationResult
+  /** Receives one draft per time slot (always exactly one when editing). */
+  onSubmit: (drafts: CourseDraft[]) => MutationResult
   /** Reports the ramo getting a new time slot (null when creating a new ramo). */
   onSelectedTitleChange?: (title: string | null) => void
 }
@@ -51,6 +59,8 @@ function Field({
 /**
  * Controlled form for creating/editing a course.
  *
+ * A new ramo can have several time slots (e.g. Monday 11:30-13:00 and Wednesday 15:00-17:00),
+ * each with its own days, hours and room. Editing works on a single block.
  * Owns only local draft + error state; all validation is delegated to the
  * `onSubmit` handler (which runs the pure domain rules).
  */
@@ -62,18 +72,45 @@ export function CourseForm({
   onSubmit,
   onSelectedTitleChange,
 }: CourseFormProps) {
-  const [draft, setDraft] = useState<CourseDraft>(initialDraft)
+  const nextKey = useRef(1)
+  const [title, setTitle] = useState(initialDraft.title)
+  const [colorId, setColorId] = useState(initialDraft.colorId)
+  const [slots, setSlots] = useState<SlotState[]>(() => [
+    {
+      key: 0,
+      room: initialDraft.room,
+      start: initialDraft.start,
+      end: initialDraft.end,
+      days: initialDraft.days,
+    },
+  ])
   const [errors, setErrors] = useState<ValidationError[]>([])
   const [selectedGroup, setSelectedGroup] = useState<CourseGroup | null>(null)
 
   const isAddingSlot = mode === "create" && selectedGroup !== null
+  const canAddSlots = mode === "create"
+  const hasSeveral = slots.length > 1
 
   useEffect(() => {
     onSelectedTitleChange?.(isAddingSlot ? selectedGroup.title : null)
   }, [isAddingSlot, selectedGroup, onSelectedTitleChange])
 
-  const set = <K extends keyof CourseDraft>(key: K, value: CourseDraft[K]) => {
-    setDraft((prev) => ({ ...prev, [key]: value }))
+  const setSlot = (index: number, patch: Partial<SlotValues>) => {
+    setSlots((prev) => prev.map((slot, i) => (i === index ? { ...slot, ...patch } : slot)))
+  }
+
+  const addSlot = () => {
+    setSlots((prev) => {
+      if (prev.length >= MAX_SLOTS) return prev
+      // The next slot usually repeats the room and length; only the days and start differ.
+      const last = prev[prev.length - 1]
+      return [...prev, { key: nextKey.current++, room: last.room, start: last.start, end: last.end, days: [] }]
+    })
+  }
+
+  const removeSlot = (index: number) => {
+    setSlots((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev))
+    setErrors([])
   }
 
   const handleGroupSelect = (group: CourseGroup | null) => {
@@ -81,30 +118,35 @@ export function CourseForm({
     if (group) {
       // Start from the latest slot: only the days usually differ from it.
       const latest = group.slots[group.slots.length - 1]
-      setDraft((prev) => ({
-        ...prev,
-        title: group.title,
-        colorId: group.colorId,
-        room: latest?.room ?? "",
-        start: latest?.start ?? prev.start,
-        end: latest?.end ?? prev.end,
-        days: [],
-      }))
+      setTitle(group.title)
+      setColorId(group.colorId)
+      setSlots([
+        {
+          key: nextKey.current++,
+          room: latest?.room ?? "",
+          start: latest?.start ?? slots[0].start,
+          end: latest?.end ?? slots[0].end,
+          days: [],
+        },
+      ])
     } else {
-      setDraft((prev) => ({
-        ...prev,
-        title: "",
-        colorId: initialDraft.colorId,
-      }))
+      setTitle("")
+      setColorId(initialDraft.colorId)
     }
     setErrors([])
   }
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    const tidy = { ...draft, start: normalizeTimeInput(draft.start), end: normalizeTimeInput(draft.end) }
-    setDraft(tidy)
-    const result = onSubmit(tidy)
+    const tidy = slots.map((slot) => ({
+      ...slot,
+      start: normalizeTimeInput(slot.start),
+      end: normalizeTimeInput(slot.end),
+    }))
+    setSlots(tidy)
+    const result = onSubmit(
+      tidy.map(({ room, start, end, days }) => ({ title, colorId, room, start, end, days })),
+    )
     if (!result.ok) setErrors(result.errors)
   }
 
@@ -113,20 +155,20 @@ export function CourseForm({
    * "10:30" as soon as four digits are typed, and any other shorthand ("930", "9", "10.30")
    * when the field loses focus or the form is submitted.
    */
-  const timeField = (key: "start" | "end", hint: "next" | "done") => ({
+  const timeField = (index: number, key: "start" | "end", hint: "next" | "done") => ({
     type: "text" as const,
     // "decimal" shows digits plus a separator key on phones; the numeric pad has neither colon nor dot.
     inputMode: "decimal" as const,
     enterKeyHint: hint,
     autoComplete: "off",
     maxLength: 5,
-    value: draft[key],
+    value: slots[index][key],
     onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
       const typed = event.target.value.replace(/[^\d:.,hH]/g, "")
-      set(key, /^\d{4}$/.test(typed) ? normalizeTimeInput(typed) : typed)
+      setSlot(index, { [key]: /^\d{4}$/.test(typed) ? normalizeTimeInput(typed) : typed })
     },
-    onBlur: () => set(key, normalizeTimeInput(draft[key])),
-    "aria-invalid": Boolean(errorFor(errors, key)),
+    onBlur: () => setSlot(index, { [key]: normalizeTimeInput(slots[index][key]) }),
+    "aria-invalid": Boolean(errorFor(errors, key, index)),
     className: fieldClass,
   })
 
@@ -146,7 +188,7 @@ export function CourseForm({
         <div className="space-y-2">
           <SlotSummary group={selectedGroup} />
           <p className="text-xs text-muted-foreground text-pretty">
-            Elige los días del nuevo horario. Si cambian la hora o la sala, ajústalas abajo.
+            Elige los días y la hora del nuevo horario. Si el ramo tiene más, puedes agregarlos abajo.
           </p>
         </div>
       ) : (
@@ -154,8 +196,8 @@ export function CourseForm({
           <input
             id="course-title"
             type="text"
-            value={draft.title}
-            onChange={(e) => set("title", e.target.value)}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="Ej. Cálculo Diferencial"
             aria-invalid={Boolean(errorFor(errors, "title"))}
             className={fieldClass}
@@ -163,38 +205,98 @@ export function CourseForm({
         </Field>
       )}
 
-      <Field label="Sala (opcional)" htmlFor="course-room">
-        <input
-          id="course-room"
-          type="text"
-          value={draft.room}
-          onChange={(e) => set("room", e.target.value)}
-          placeholder="Ej. Sala 204 / Lab. B"
-          className={fieldClass}
-        />
-      </Field>
+      {slots.map((slot, index) => (
+        <fieldset
+          key={slot.key}
+          className={
+            hasSeveral
+              ? "space-y-3 rounded-lg border border-border bg-muted/30 p-3"
+              : "space-y-4 border-0 p-0"
+          }
+        >
+          {hasSeveral ? (
+            <legend className="sr-only">Horario {index + 1}</legend>
+          ) : null}
+          {hasSeveral ? (
+            <div className="flex items-center justify-between">
+              <p className="text-[13px] font-medium" aria-hidden>
+                Horario {index + 1}
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeSlot(index)}
+                aria-label={`Quitar horario ${index + 1}`}
+                className="relative -mr-1 size-7 after:absolute after:-inset-2 after:content-['']"
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          ) : null}
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Hora de inicio" htmlFor="course-start" error={errorFor(errors, "start")}>
-          <input id="course-start" placeholder="HH:mm (ej: 13:50)" {...timeField("start", "next")} />
-        </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field
+              label="Hora de inicio"
+              htmlFor={`course-start-${slot.key}`}
+              error={errorFor(errors, "start", index)}
+            >
+              <input
+                id={`course-start-${slot.key}`}
+                placeholder="HH:mm (ej: 13:50)"
+                {...timeField(index, "start", "next")}
+              />
+            </Field>
 
-        <Field label="Hora de término" htmlFor="course-end" error={errorFor(errors, "end")}>
-          <input id="course-end" placeholder="HH:mm (ej: 14:50)" {...timeField("end", "done")} />
-        </Field>
-      </div>
+            <Field
+              label="Hora de término"
+              htmlFor={`course-end-${slot.key}`}
+              error={errorFor(errors, "end", index)}
+            >
+              <input
+                id={`course-end-${slot.key}`}
+                placeholder="HH:mm (ej: 14:50)"
+                {...timeField(index, "end", "done")}
+              />
+            </Field>
+          </div>
 
-      <Field label="Días" error={errorFor(errors, "days")}>
-        <DaySelector
-          value={draft.days}
-          onChange={(days: DayId[]) => set("days", days)}
-          invalid={Boolean(errorFor(errors, "days"))}
-        />
-      </Field>
+          <Field label="Días" error={errorFor(errors, "days", index)}>
+            <DaySelector
+              value={slot.days}
+              onChange={(days: DayId[]) => setSlot(index, { days })}
+              invalid={Boolean(errorFor(errors, "days", index))}
+            />
+          </Field>
+
+          <Field label="Sala (opcional)" htmlFor={`course-room-${slot.key}`}>
+            <input
+              id={`course-room-${slot.key}`}
+              type="text"
+              value={slot.room}
+              onChange={(e) => setSlot(index, { room: e.target.value })}
+              placeholder="Ej. Sala 204 / Lab. B"
+              className={fieldClass}
+            />
+          </Field>
+        </fieldset>
+      ))}
+
+      {canAddSlots && slots.length < MAX_SLOTS ? (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={addSlot}
+          className="h-10 w-full justify-center roomy:h-9"
+        >
+          <Plus className="size-4" aria-hidden />
+          Agregar otro horario
+        </Button>
+      ) : null}
 
       {isAddingSlot ? null : (
         <Field label="Color">
-          <ColorPicker value={draft.colorId} onChange={(colorId) => set("colorId", colorId)} />
+          <ColorPicker value={colorId} onChange={setColorId} />
         </Field>
       )}
 

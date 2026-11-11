@@ -80,10 +80,15 @@ export function Modal({ open, onClose, title, description, children, footer }: M
     }
     document.addEventListener("keydown", onKeyDown)
 
-    // Focus the first focusable element inside the panel.
-    const focusable = panelRef.current?.querySelector<HTMLElement>(
-      'input, select, textarea, button, [tabindex]:not([tabindex="-1"])',
-    )
+    // Pointer devices get the first field, so typing can start at once. Touch devices keep the
+    // keyboard closed until a field is tapped, so the first control gets the focus instead.
+    const touch = window.matchMedia("(pointer: coarse)").matches
+    const target = touch
+      ? null
+      : panelRef.current?.querySelector<HTMLElement>("input:not([type=hidden]), select, textarea")
+    const focusable =
+      target ??
+      panelRef.current?.querySelector<HTMLElement>('button, [tabindex]:not([tabindex="-1"])')
     focusable?.focus()
 
     return () => {
@@ -188,7 +193,7 @@ export function Modal({ open, onClose, title, description, children, footer }: M
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="-mr-2 -mt-1 shrink-0"
+            className="relative -mr-2 -mt-1 shrink-0 after:absolute after:-inset-1.5 after:content-['']"
             aria-label="Cerrar"
           >
             <X className="size-4" />

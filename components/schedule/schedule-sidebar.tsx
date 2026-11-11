@@ -41,7 +41,7 @@ export function ScheduleSidebar({ groups, focusKey, onFocus }: CourseListProps) 
     >
       <div className="flex items-center gap-2.5 px-1.5">
         <Logo />
-        <span className="text-[15px] font-semibold tracking-tight">ScheduleGrid</span>
+        <span className="text-[15px] font-semibold tracking-tight">Sin Topes</span>
       </div>
 
       <section aria-labelledby="sidebar-courses">

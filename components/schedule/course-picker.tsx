@@ -70,7 +70,7 @@ function Chip({
       aria-checked={checked}
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+        "inline-flex h-10 roomy:h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
         checked
           ? "border-sky/60 bg-accent font-medium text-foreground"
           : "border-input bg-background text-muted-foreground hover:text-foreground",
