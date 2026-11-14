@@ -50,12 +50,13 @@ Abre [http://localhost:3000](http://localhost:3000). No necesitas configurar nad
 ## 🧪 Desarrollo
 
 ```bash
-pnpm exec tsc --noEmit   # revisar tipos
+pnpm typecheck           # revisar tipos
+pnpm test                # pruebas del dominio (Vitest)
 pnpm build               # construir para producción
 pnpm start               # servir la versión construida
 ```
 
-El proyecto no tiene un linter ni pruebas automáticas: la revisión es `tsc` y `pnpm build`. Más comandos en [COMMANDS.md](COMMANDS.md).
+Las pruebas cubren la lógica de `lib/schedule/` (horas, topes, columnas, mezcla, comparación y validación). GitHub Actions corre tipos, pruebas y build en cada PR hacia `develop` y `main`. No hay linter. Más comandos en [COMMANDS.md](COMMANDS.md).
 
 ## 🌐 Compartir por enlace (Upstash Redis)
 
