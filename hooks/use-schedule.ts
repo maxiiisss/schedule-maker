@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 
 import { pickNextColor } from "@/lib/schedule/colors"
 import { DAYS, DEFAULT_DAY_IDS } from "@/lib/schedule/constants"
+import { SCHEDULE_STORAGE_KEY } from "@/lib/schedule/storage-keys"
 import type { Course, CourseDraft, Day, ValidationError } from "@/lib/schedule/types"
 import { validateCourseDraft, validateCourseDrafts } from "@/lib/schedule/validation"
 
@@ -33,7 +34,7 @@ export function useSchedule(initial: Course[] = []) {
 
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem('schedule:v1')
+      const raw = window.localStorage.getItem(SCHEDULE_STORAGE_KEY)
       const parsed = raw ? (JSON.parse(raw) as Course[]) : null
       if (Array.isArray(parsed)) setCourses(parsed)
     } catch {
@@ -119,7 +120,7 @@ export function useSchedule(initial: Course[] = []) {
     if (!hydrated) return
     try {
       const data = JSON.stringify(courses)
-      window.localStorage.setItem('schedule:v1', data)
+      window.localStorage.setItem(SCHEDULE_STORAGE_KEY, data)
     } catch (e) {
       // ignore storage errors (e.g., quota) — keep app usable
     }
