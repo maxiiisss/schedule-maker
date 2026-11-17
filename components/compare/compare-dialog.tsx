@@ -1,6 +1,6 @@
 "use client"
 
-import { Eye, EyeOff, Plus, X } from "lucide-react"
+import { Eye, EyeOff, History, Plus, X } from "lucide-react"
 import { useState } from "react"
 
 import { Modal } from "@/components/schedule/modal"
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { resolveColor } from "@/lib/schedule/colors"
 import { MAX_PEOPLE, type Person } from "@/lib/schedule/compare"
+import { pastEntries, type HistoryEntry } from "@/lib/schedule/history"
 
 export interface AddLinkResult {
   ok: boolean
@@ -18,10 +19,15 @@ interface CompareDialogProps {
   open: boolean
   onClose: () => void
   people: Person[]
+  /** Everyone compared before; the ones in the comparison right now are left out of the list. */
+  history: HistoryEntry[]
   onAddLink: (text: string) => Promise<AddLinkResult>
   onRename: (id: string, name: string) => void
   onToggle: (id: string) => void
   onRemove: (id: string) => void
+  onRestoreFromHistory: (entry: HistoryEntry) => AddLinkResult
+  onForgetHistory: (sourceId: string) => void
+  onClearHistory: () => void
 }
 
 /** Add, show/hide, rename and remove the schedules being compared. */
@@ -29,15 +35,20 @@ export function CompareDialog({
   open,
   onClose,
   people,
+  history,
   onAddLink,
   onRename,
   onToggle,
   onRemove,
+  onRestoreFromHistory,
+  onForgetHistory,
+  onClearHistory,
 }: CompareDialogProps) {
   const [link, setLink] = useState("")
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<AddLinkResult | null>(null)
   const full = people.length >= MAX_PEOPLE
+  const past = pastEntries(history, people)
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -113,6 +124,38 @@ export function CompareDialog({
           )}
         </section>
 
+        {past.length > 0 ? (
+          <section aria-labelledby="compare-history" className="grid gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h3
+                id="compare-history"
+                className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground"
+              >
+                <History className="size-3.5" aria-hidden />
+                Comparados antes
+              </h3>
+              <Button
+                variant="ghost"
+                onClick={onClearHistory}
+                className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive"
+              >
+                Borrar historial
+              </Button>
+            </div>
+            <ul className="grid gap-1.5">
+              {past.map((entry) => (
+                <HistoryRow
+                  key={entry.sourceId}
+                  entry={entry}
+                  full={full}
+                  onRestore={(item) => setResult(onRestoreFromHistory(item))}
+                  onForget={onForgetHistory}
+                />
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
         <p className="text-xs text-muted-foreground text-pretty">
           Los horarios que agregas se guardan solo en este dispositivo. Son una copia del momento en que
           se compartieron.
@@ -181,6 +224,51 @@ function PersonRow({
         onClick={() => onRemove(person.id)}
         aria-label={`Quitar a ${person.name}`}
         title="Quitar"
+      >
+        <X className="size-4" />
+      </Button>
+    </li>
+  )
+}
+
+const DATE_FORMAT = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", year: "numeric" })
+
+function HistoryRow({
+  entry,
+  full,
+  onRestore,
+  onForget,
+}: {
+  entry: HistoryEntry
+  full: boolean
+  onRestore: (entry: HistoryEntry) => void
+  onForget: (sourceId: string) => void
+}) {
+  return (
+    <li className="flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2">
+      <div className="min-w-0 flex-1 px-1.5">
+        <p className="truncate text-[13px] font-medium">{entry.name}</p>
+        <p className="text-xs text-muted-foreground">
+          {entry.courses.length} {entry.courses.length === 1 ? "ramo" : "ramos"} · agregado el{" "}
+          {DATE_FORMAT.format(entry.savedAt)}
+        </p>
+      </div>
+      <Button
+        variant="outline"
+        onClick={() => onRestore(entry)}
+        disabled={full}
+        aria-label={`Volver a comparar a ${entry.name}`}
+        className="h-9 px-3 text-[13px]"
+      >
+        <Plus className="size-4" />
+        Agregar
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => onForget(entry.sourceId)}
+        aria-label={`Borrar a ${entry.name} del historial`}
+        title="Borrar del historial"
       >
         <X className="size-4" />
       </Button>

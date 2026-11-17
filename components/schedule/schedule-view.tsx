@@ -19,11 +19,13 @@ import { CompareDialog, type AddLinkResult } from "@/components/compare/compare-
 import { SharePanel } from "@/components/share/share-panel"
 import { Button } from "@/components/ui/button"
 import { useNow } from "@/hooks/use-now"
+import { useHistory } from "@/hooks/use-history"
 import { usePeople } from "@/hooks/use-people"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useViewState } from "@/hooks/use-view-state"
 import { cn } from "@/lib/utils"
 import { bestFreeSlot, buildComparison, commonFreeSlots, MAX_PEOPLE } from "@/lib/schedule/compare"
+import type { HistoryEntry } from "@/lib/schedule/history"
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { getCourseGroups } from "@/lib/schedule/courses"
 import { dayIdFromDate, hasWeekendCourses, weekViewDays } from "@/lib/schedule/days"
@@ -98,6 +100,7 @@ export function ScheduleView() {
     remove: removePerson,
     restore: restorePeople,
   } = usePeople()
+  const { history, forget: forgetHistory, clear: clearHistory } = useHistory()
 
   const showToast = useCallback((message: string, undo?: () => void) => {
     window.clearTimeout(toastTimer.current)
@@ -318,6 +321,20 @@ export function ScheduleView() {
       }
     }
     return { ok: true, message: `Se agregó «${added.person.name}». Puedes cambiarle el nombre abajo.` }
+  }
+
+  const restoreFromHistory = (entry: HistoryEntry): AddLinkResult => {
+    const added = addPerson({ name: entry.name, courses: entry.courses, sourceId: entry.sourceId })
+    if (!added.ok) {
+      return {
+        ok: false,
+        message:
+          added.reason === "duplicate"
+            ? "Ya agregaste este horario."
+            : `Puedes comparar hasta ${MAX_PEOPLE} horarios a la vez. Quita uno para agregar otro.`,
+      }
+    }
+    return { ok: true, message: `Se agregó «${added.person.name}» desde el historial.` }
   }
 
   const handleRemovePerson = (id: string) => {
@@ -643,10 +660,14 @@ export function ScheduleView() {
         open={compareOpen}
         onClose={() => setCompareOpen(false)}
         people={people}
+        history={history}
         onAddLink={addFromLink}
         onRename={renamePerson}
         onToggle={togglePerson}
         onRemove={handleRemovePerson}
+        onRestoreFromHistory={restoreFromHistory}
+        onForgetHistory={forgetHistory}
+        onClearHistory={clearHistory}
       />
 
       <Modal

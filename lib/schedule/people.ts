@@ -1,4 +1,5 @@
 import { MAX_PEOPLE, nextPersonColor, type Person } from "./compare"
+import { rememberPeople } from "./history"
 import type { Course } from "./types"
 
 const STORAGE_KEY = "schedule:people:v1"
@@ -24,6 +25,8 @@ export function writePeople(people: Person[]) {
   } catch {
     // storage unavailable: comparison still works until the page is closed
   }
+  // Everyone who was compared stays in the history, even after being removed.
+  rememberPeople(people)
 }
 
 let counter = 0
