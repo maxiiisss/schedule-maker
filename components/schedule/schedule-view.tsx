@@ -95,9 +95,11 @@ export function ScheduleView() {
   const nowDate = useNow()
   const {
     people,
+    ready: peopleReady,
     add: addPerson,
     rename: renamePerson,
     toggle: togglePerson,
+    setAllVisible,
     remove: removePerson,
     restore: restorePeople,
   } = usePeople()
@@ -125,6 +127,21 @@ export function ScheduleView() {
   // With people to compare, the grid shows everyone's blocks, colored by person.
   const visiblePeople = useMemo(() => people.filter((person) => person.visible), [people])
   const comparing = visiblePeople.length > 0
+  // Three or more schedules side by side leave each block about 55 px wide in the week view,
+  // too narrow to read. Going from fewer to that many switches to the day view, once; the
+  // person can undo it or pick Semana again. Loading a page that already compares does nothing.
+  const previousVisible = useRef<number | null>(null)
+  useEffect(() => {
+    if (!peopleReady || !viewReady) return
+    const count = visiblePeople.length
+    const before = previousVisible.current
+    previousVisible.current = count
+    if (before !== null && before < 2 && count >= 2 && mode === "week") {
+      setMode("day")
+      showToast("Vista Día: con varios horarios se lee mejor.", () => setMode("week"))
+    }
+  }, [peopleReady, viewReady, visiblePeople.length, mode, setMode, showToast])
+
   const gridCourses = useMemo(
     () => (comparing ? buildComparison(courses, people) : courses),
     [comparing, courses, people],
@@ -563,6 +580,12 @@ export function ScheduleView() {
               showFree={showFree}
               onShowFreeChange={setShowFree}
               bestSlot={freeSlots ? bestFreeSlot(freeSlots) : null}
+              onTogglePerson={togglePerson}
+              onHideAll={() => {
+                setAllVisible(false)
+                showToast("Viendo solo tu horario.", () => setAllVisible(true))
+              }}
+              onShowAll={() => setAllVisible(true)}
               onManage={() => setCompareOpen(true)}
             />
           ) : null}

@@ -46,6 +46,11 @@ export function usePeople() {
     [people, commit],
   )
 
+  const setAllVisible = useCallback(
+    (visible: boolean) => commit(people.map((person) => ({ ...person, visible }))),
+    [people, commit],
+  )
+
   const remove = useCallback(
     (id: string) => commit(people.filter((person) => person.id !== id)),
     [people, commit],
@@ -53,5 +58,5 @@ export function usePeople() {
 
   const restore = useCallback((next: Person[]) => commit(next), [commit])
 
-  return { people, ready, add, rename, toggle, remove, restore }
+  return { people, ready, add, rename, toggle, setAllVisible, remove, restore }
 }
