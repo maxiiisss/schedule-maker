@@ -98,6 +98,7 @@ export function ScheduleView() {
     add: addPerson,
     rename: renamePerson,
     toggle: togglePerson,
+    setAllVisible,
     remove: removePerson,
     restore: restorePeople,
   } = usePeople()
@@ -453,7 +454,7 @@ export function ScheduleView() {
               <div className="hidden min-w-0 min-[480px]:block">
                 <p className="truncate text-[15px] font-semibold leading-tight tracking-tight">
                   <span className="lg:hidden">Sin Topes</span>
-                  <span className="hidden lg:inline">Mi horario</span>
+                  <span className="hidden lg:inline">{comparing ? "Comparando horarios" : "Mi horario"}</span>
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {courseGroups.length === 0
@@ -563,6 +564,12 @@ export function ScheduleView() {
               showFree={showFree}
               onShowFreeChange={setShowFree}
               bestSlot={freeSlots ? bestFreeSlot(freeSlots) : null}
+              onTogglePerson={togglePerson}
+              onHideAll={() => {
+                setAllVisible(false)
+                showToast("Viendo solo tu horario.", () => setAllVisible(true))
+              }}
+              onShowAll={() => setAllVisible(true)}
               onManage={() => setCompareOpen(true)}
             />
           ) : null}
