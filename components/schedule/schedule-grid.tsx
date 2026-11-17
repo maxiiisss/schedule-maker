@@ -80,7 +80,11 @@ export function ScheduleGrid({
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <div className="overflow-x-auto overscroll-x-contain">
+      {/* In a read-only grid no block can take focus, so the scroller itself must, or keyboard users cannot scroll it. */}
+      <div
+        className="overflow-x-auto overscroll-x-contain focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+        {...(readOnly ? { tabIndex: 0, role: "region", "aria-label": "Horario, desplázate para ver más días" } : {})}
+      >
         {/* The ref sits on the full-width content so image capture includes every column. */}
         <div
           ref={gridRef}
