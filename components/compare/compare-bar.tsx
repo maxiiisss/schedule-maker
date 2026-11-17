@@ -21,7 +21,8 @@ interface CompareBarProps {
   onShowFreeChange: (value: boolean) => void
   /** Longest gap when everyone is free, if any. */
   bestSlot: FreeSlot | null
-  onManage: () => void
+  /** When omitted, the "Administrar" button is not shown. */
+  onManage?: () => void
 }
 
 /** Legend and controls shown above the grid while schedules are being compared. */
@@ -80,10 +81,12 @@ export function CompareBar({ people, showFree, onShowFreeChange, bestSlot, onMan
         ) : null}
       </p>
 
-      <Button variant="ghost" onClick={onManage} className="h-10 px-2.5 roomy:h-8">
-        <Settings2 className="size-4" />
-        Administrar
-      </Button>
+      {onManage ? (
+        <Button variant="ghost" onClick={onManage} className="h-10 px-2.5 roomy:h-8">
+          <Settings2 className="size-4" />
+          Administrar
+        </Button>
+      ) : null}
     </section>
   )
 }

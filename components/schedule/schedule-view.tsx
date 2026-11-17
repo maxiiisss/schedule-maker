@@ -36,6 +36,7 @@ import { Modal } from "./modal"
 import { MenuIcon } from "./menu-icon"
 import { MenuChoice, MenuItem, MenuSeparator, PopoverMenu } from "./popover-menu"
 import { ScheduleGrid, type NowMarker } from "./schedule-grid"
+import { SwipeDays } from "./swipe-days"
 import { CourseChips, Logo, ScheduleSidebar } from "./schedule-sidebar"
 import { Segmented } from "./segmented"
 import { SkipLink } from "./skip-link"
@@ -461,7 +462,7 @@ export function ScheduleView() {
                   value={includeWeekend || weekendLocked ? "full" : "work"}
                   onChange={(value) => setIncludeWeekend(value === "full")}
                   options={[
-                    { value: "work", label: "Lun a Vie", disabled: weekendLocked },
+                    { value: "work", label: "Lun a Vie", disabled: weekendLocked, disabledReason: "Hay ramos en fin de semana" },
                     { value: "full", label: "Lun a Dom" },
                   ]}
                 />
@@ -558,17 +559,19 @@ export function ScheduleView() {
           ) : null}
 
           <div id="horario" tabIndex={-1} className="relative outline-none">
-            <ScheduleGrid
-              days={days}
-              courses={gridCourses}
-              freeSlots={freeSlots}
-              crowded={comparing}
-              focusKey={focusKey}
-              now={now}
-              onEditCourse={openEdit}
-              onDeleteCourse={handleDelete}
-              gridRef={gridRef}
-            />
+            <SwipeDays day={selectedDay} onChange={setSelectedDay} enabled={mode === "day"}>
+              <ScheduleGrid
+                days={days}
+                courses={gridCourses}
+                freeSlots={freeSlots}
+                crowded={comparing}
+                focusKey={focusKey}
+                now={now}
+                onEditCourse={openEdit}
+                onDeleteCourse={handleDelete}
+                gridRef={gridRef}
+              />
+            </SwipeDays>
             {ready && courses.length === 0 ? (
               <div className="absolute inset-x-3 top-16 z-20 sm:inset-x-8">
                 <EmptyState onAdd={openCreate} />
