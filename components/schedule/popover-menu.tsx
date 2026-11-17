@@ -23,6 +23,8 @@ interface PopoverMenuProps {
   trigger: (props: TriggerProps) => React.ReactNode
   children: React.ReactNode
   className?: string
+  /** On phones the panel opens upwards (for a trigger in a bottom bar); from tablet width it opens below as usual. */
+  openUpOnPhone?: boolean
 }
 
 const CloseContext = createContext<() => void>(() => {})
@@ -34,7 +36,15 @@ const CloseContext = createContext<() => void>(() => {})
  * move between items. The panel never grows taller than the screen or wider
  * than the viewport, so it fits a 360 px phone.
  */
-export function PopoverMenu({ open, onOpenChange, label, trigger, children, className }: PopoverMenuProps) {
+export function PopoverMenu({
+  open,
+  onOpenChange,
+  label,
+  trigger,
+  children,
+  className,
+  openUpOnPhone = false,
+}: PopoverMenuProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
@@ -114,8 +124,12 @@ export function PopoverMenu({ open, onOpenChange, label, trigger, children, clas
             role="menu"
             aria-label={label}
             data-state={open ? "open" : "closed"}
+            data-up={openUpOnPhone ? "" : undefined}
             aria-hidden={open ? undefined : true}
-            className="menu-panel absolute right-0 top-full z-50 mt-1 max-h-[min(70svh,24rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-xl border border-input bg-popover p-1 shadow-[0_16px_40px_rgb(0_0_0/0.55)]"
+            className={cn(
+              "menu-panel absolute right-0 z-50 max-h-[min(70svh,24rem)] w-64 max-w-[calc(100vw-1rem)] overflow-y-auto overscroll-contain rounded-xl border border-input bg-popover p-1 shadow-[0_16px_40px_rgb(0_0_0/0.55)]",
+              openUpOnPhone ? "bottom-full mb-1 roomy:bottom-auto roomy:top-full roomy:mb-0 roomy:mt-1" : "top-full mt-1",
+            )}
           >
             {children}
           </div>
