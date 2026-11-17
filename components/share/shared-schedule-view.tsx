@@ -1,11 +1,10 @@
 "use client"
 
-import { ArrowLeft, Lock, MoreHorizontal, Plus, Users } from "lucide-react"
+import { ArrowLeft, Check, MoreHorizontal, Plus, Users } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 
-import { CompareBar } from "@/components/compare/compare-bar"
 import { DayTabs } from "@/components/schedule/day-tabs"
 import { Modal } from "@/components/schedule/modal"
 import { MenuItem, MenuSeparator, PopoverMenu } from "@/components/schedule/popover-menu"
@@ -17,13 +16,16 @@ import { SwipeDays } from "@/components/schedule/swipe-days"
 import { Button } from "@/components/ui/button"
 import { useNow } from "@/hooks/use-now"
 import { useViewState } from "@/hooks/use-view-state"
+import { cn } from "@/lib/utils"
 import { colorStyles, resolveColor } from "@/lib/schedule/colors"
 import {
   bestFreeSlot,
   buildComparison,
   commonFreeSlots,
+  formatMinutes,
   MAX_PEOPLE,
   nextPersonColor,
+  PERSON_COLOR_IDS,
   type Person,
 } from "@/lib/schedule/compare"
 import { DAY_BY_ID } from "@/lib/schedule/constants"
@@ -31,6 +33,7 @@ import { dayIdFromDate, weekViewDays } from "@/lib/schedule/days"
 import { mergeCourses } from "@/lib/schedule/merge"
 import { readPeople, withPerson, writePeople } from "@/lib/schedule/people"
 import { FLASH_STORAGE_KEY, SCHEDULE_STORAGE_KEY } from "@/lib/schedule/storage-keys"
+import { formatDuration } from "@/lib/schedule/time"
 import type { Course, DayId } from "@/lib/schedule/types"
 
 function readOwnCourses(): Course[] {
@@ -43,9 +46,6 @@ function readOwnCourses(): Course[] {
   }
 }
 
-/** Which schedule the page shows: theirs (the link), both together, or the user's own. */
-type Shown = "theirs" | "both" | "mine"
-
 interface SharedScheduleViewProps {
   /** Id in the share link, used to avoid adding the same schedule twice. */
   shareId: string
@@ -56,15 +56,17 @@ interface SharedScheduleViewProps {
 /**
  * Page for a schedule opened from a share link.
  *
- * It opens on the other person's schedule so it is clear whose it is, and from there the
- * visitor can look at both schedules together, go back to their own, or keep the comparison.
- * Nothing here changes the visitor's data until they choose an action.
+ * It opens on the other person's schedule. Two layers, theirs and the visitor's own, can be
+ * switched on and off like the calendars in a calendar app; the chips that switch them are also
+ * the legend. What to do with the schedule (compare, add, replace) lives apart from how to look
+ * at it, in one primary action plus a menu. Nothing changes the visitor's data until they choose.
  */
 export function SharedScheduleView({ shareId, name, courses }: SharedScheduleViewProps) {
   const router = useRouter()
   const { mode, setMode, selectedDay, setSelectedDay } = useViewState()
   const nowDate = useNow()
-  const [shown, setShown] = useState<Shown>("theirs")
+  const [showTheirs, setShowTheirs] = useState(true)
+  const [showMine, setShowMine] = useState(false)
   const [showFree, setShowFree] = useState(true)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmingReplace, setConfirmingReplace] = useState(false)
@@ -78,6 +80,9 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
   const hasOwn = own.length > 0
 
   const owner = name || "Horario compartido"
+  const firstName = name.trim().split(/\s+/)[0]?.slice(0, 12) ?? ""
+  const theirLabel = firstName || "Este horario"
+
   const person = useMemo<Person>(
     () => ({
       id: "shared",
@@ -90,10 +95,12 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
     [name, courses, shareId],
   )
 
-  const gridCourses = useMemo(
-    () => (shown === "both" ? buildComparison(own, [person]) : shown === "mine" ? own : courses),
-    [shown, own, person, courses],
-  )
+  const both = showTheirs && showMine && hasOwn
+  const gridCourses = useMemo(() => {
+    if (both) return buildComparison(own, [person])
+    if (showMine && hasOwn && !showTheirs) return own
+    return courses
+  }, [both, showMine, showTheirs, hasOwn, own, person, courses])
 
   const days = useMemo(
     () => (mode === "day" ? [DAY_BY_ID[selectedDay]] : weekViewDays(gridCourses, false)),
@@ -102,11 +109,13 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
   const busyDays = useMemo(() => new Set<DayId>(gridCourses.flatMap((course) => course.days)), [gridCourses])
   const freeSlots = useMemo(
     () =>
-      shown === "both" && showFree
+      both && showFree
         ? commonFreeSlots([own, courses], days.map((day) => day.id).filter((id) => busyDays.has(id)))
         : undefined,
-    [shown, showFree, own, courses, days, busyDays],
+    [both, showFree, own, courses, days, busyDays],
   )
+  const bestSlot = freeSlots ? bestFreeSlot(freeSlots) : null
+
   const now = useMemo<NowMarker | null>(
     () =>
       nowDate
@@ -118,6 +127,16 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
         : null,
     [nowDate],
   )
+
+  // At least one layer always stays on, so the grid never goes blank.
+  const toggleTheirs = () => {
+    if (showTheirs && !showMine) return
+    setShowTheirs(!showTheirs)
+  }
+  const toggleMine = () => {
+    if (showMine && !showTheirs) return
+    setShowMine(!showMine)
+  }
 
   /** Add these courses to the user's schedule, keeping everything already there. */
   const addToMine = () => {
@@ -158,17 +177,23 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
     }
     // A schedule that is already in the comparison needs no second copy: just go back to it.
     if (result.ok) writePeople(result.people)
+    try {
+      window.sessionStorage.setItem(
+        FLASH_STORAGE_KEY,
+        result.ok ? `«${owner}» se agregó a tu comparación.` : `«${owner}» ya estaba en tu comparación.`,
+      )
+    } catch {
+      // the message is a courtesy: going back to the schedule still works without it
+    }
     router.push("/")
   }
 
   const blocks = courses.reduce((sum, course) => sum + course.days.length, 0)
   const avatar = colorStyles(resolveColor(person.colorId).hex)
   const initial = (name.trim()[0] ?? "?").toUpperCase()
-  // Short enough to fit a phone-width selector next to the other two options.
-  const firstName = name.trim().split(/\s+/)[0]?.slice(0, 10) ?? ""
 
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-4 px-3 py-4 sm:px-5 sm:py-6">
+    <div className="mx-auto flex min-h-svh w-full max-w-6xl flex-col gap-3 px-3 pb-28 pt-3 sm:px-5 roomy:gap-4 roomy:py-6 roomy:pb-6">
       <SkipLink target="horario" />
 
       <nav aria-label="Navegación" className="flex items-center justify-between gap-3">
@@ -181,50 +206,46 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
         </Link>
         <Link
           href="/"
-          className="inline-flex h-10 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring roomy:h-9"
+          className="inline-flex h-11 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-muted-foreground hover:bg-white/[0.07] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring roomy:h-9 roomy:px-3"
         >
           <ArrowLeft className="size-4" aria-hidden />
           {hasOwn ? "Volver a mi horario" : "Crear el mío"}
         </Link>
       </nav>
 
-      <section aria-label="Horario que estás viendo" className="rounded-xl border border-border bg-card p-4">
-        <div className="flex items-start gap-3">
+      <header className="flex flex-col gap-3 roomy:flex-row roomy:items-center roomy:justify-between roomy:gap-6">
+        <div className="flex min-w-0 items-center gap-3">
           <span
             aria-hidden
-            className="grid size-11 shrink-0 place-items-center rounded-full border text-lg font-semibold"
+            className="grid size-10 shrink-0 place-items-center rounded-full border text-base font-semibold"
             style={{ backgroundColor: avatar.background, borderColor: avatar.border, color: avatar.text }}
           >
             {initial}
           </span>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-semibold leading-tight tracking-tight text-balance">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold leading-tight tracking-tight">
               {name ? `Horario de ${name}` : "Horario compartido"}
             </h1>
-            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs">
-                <Lock className="size-3" aria-hidden />
-                Solo lectura
-              </span>
-              <span>
-                {courses.length} {courses.length === 1 ? "ramo" : "ramos"} · {blocks}{" "}
+            <p className="truncate text-[13px] text-muted-foreground">
+              Solo lectura: no cambia tu horario
+              <span className="hidden roomy:inline">
+                {" "}
+                · {courses.length} {courses.length === 1 ? "ramo" : "ramos"}, {blocks}{" "}
                 {blocks === 1 ? "bloque" : "bloques"}
               </span>
             </p>
           </div>
         </div>
-        <p className="mt-3 text-[13px] text-muted-foreground text-pretty">
-          Es una copia del momento en que lo compartieron. Mirarlo no cambia tu horario.
-        </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        {/* A bar fixed to the bottom of a phone, where the thumb is; inline from tablet width up. */}
+        <div className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-2 border-t border-border bg-background px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 roomy:static roomy:z-auto roomy:shrink-0 roomy:border-0 roomy:bg-transparent roomy:p-0">
           {hasOwn ? (
-            <Button onClick={keepComparing} className="h-10 px-4 roomy:h-9">
+            <Button onClick={keepComparing} className="h-11 flex-1 px-4 roomy:h-9 roomy:flex-none">
               <Users className="size-4" aria-hidden />
               Comparar en mi horario
             </Button>
           ) : (
-            <Button onClick={addToMine} className="h-10 px-4 roomy:h-9">
+            <Button onClick={addToMine} className="h-11 flex-1 px-4 roomy:h-9 roomy:flex-none">
               <Plus className="size-4" aria-hidden />
               Usar como mi horario
             </Button>
@@ -234,16 +255,17 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
             open={menuOpen}
             onOpenChange={setMenuOpen}
             label="Más opciones"
+            openUpOnPhone
             trigger={(props) => (
               <Button
                 variant="outline"
                 {...props}
                 aria-label="Más opciones"
                 title="Más opciones"
-                className="h-10 px-3 roomy:h-9"
+                className="size-11 px-0 roomy:h-9 roomy:w-auto roomy:px-3"
               >
                 <MoreHorizontal className="size-4" aria-hidden />
-                <span className="hidden sm:inline">Más opciones</span>
+                <span className="hidden roomy:inline">Más opciones</span>
               </Button>
             )}
           >
@@ -262,13 +284,7 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
             )}
           </PopoverMenu>
         </div>
-
-        {hasOwn ? (
-          <p className="mt-2 text-xs text-muted-foreground text-pretty">
-            «Comparar en mi horario» lo suma a tus comparaciones y te lleva a tu horario.
-          </p>
-        ) : null}
-      </section>
+      </header>
 
       {message ? (
         <p role="status" className="text-[13px] font-medium text-sky">
@@ -276,64 +292,72 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
         </p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
-        <span className="text-[13px] text-muted-foreground">Ver</span>
-        <Segmented<Shown>
-          label="Qué horario ver"
-          value={shown}
-          onChange={setShown}
-          options={[
-            {
-              value: "theirs",
-              label: firstName ? `Solo ${firstName}` : "Solo este",
-              shortLabel: firstName || "Este",
-            },
-            {
-              value: "both",
-              label: "Ambos juntos",
-              shortLabel: "Ambos",
-              disabled: !hasOwn,
-              disabledReason: "Crea tu horario para poder verlos juntos",
-            },
-            {
-              value: "mine",
-              label: "El mío",
-              disabled: !hasOwn,
-              disabledReason: "Aún no tienes un horario",
-            },
-          ]}
-        />
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div role="group" aria-label="Horarios que se ven" className="flex flex-wrap items-center gap-2">
+          <LayerChip
+            label={theirLabel}
+            on={showTheirs}
+            color={resolveColor(person.colorId).hex}
+            legend={both}
+            locked={showTheirs && !showMine}
+            onToggle={toggleTheirs}
+          />
+          <LayerChip
+            label="Yo"
+            on={showMine && hasOwn}
+            color={resolveColor(PERSON_COLOR_IDS[0]).hex}
+            legend={both}
+            locked={showMine && !showTheirs}
+            disabled={!hasOwn}
+            disabledReason="Aún no tienes un horario propio"
+            onToggle={toggleMine}
+          />
+        </div>
         <Segmented
           label="Vista"
           value={mode}
           onChange={setMode}
+          className="ml-auto"
           options={[
             { value: "day", label: "Día" },
             { value: "week", label: "Semana" },
           ]}
         />
-        {!hasOwn ? (
-          <p className="w-full text-xs text-muted-foreground text-pretty">
-            Cuando tengas tu propio horario podrás verlos juntos y encontrar las horas en que ambos están libres.
-          </p>
-        ) : null}
       </div>
 
-      {shown === "both" ? (
-        <CompareBar
-          people={[person]}
-          showFree={showFree}
-          onShowFreeChange={setShowFree}
-          bestSlot={freeSlots ? bestFreeSlot(freeSlots) : null}
-        />
-      ) : shown === "mine" ? (
-        <p className="text-[13px] text-muted-foreground">
-          Este es tu horario. Para editarlo,{" "}
-          <Link href="/" className="font-medium text-sky underline-offset-4 hover:underline">
-            ve a tu horario
-          </Link>
-          .
+      {!hasOwn ? (
+        <p className="text-[13px] text-muted-foreground text-pretty">
+          Cuando tengas tu propio horario podrás verlo junto a este y encontrar las horas en que ambos están libres.
         </p>
+      ) : null}
+
+      {both ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px]">
+          <label className="flex min-h-11 cursor-pointer items-center gap-2 text-muted-foreground roomy:min-h-9">
+            <input
+              type="checkbox"
+              checked={showFree}
+              onChange={(event) => setShowFree(event.target.checked)}
+              className="size-4 accent-[var(--primary)]"
+            />
+            Marcar horas libres en común
+          </label>
+          {showFree ? (
+            <p className="text-muted-foreground">
+              {bestSlot ? (
+                <>
+                  Mejor hueco:{" "}
+                  <span className="whitespace-nowrap font-medium text-foreground">
+                    {DAY_BY_ID[bestSlot.day].label} {formatMinutes(bestSlot.start)}–{formatMinutes(bestSlot.end)}
+                  </span>{" "}
+                  ({formatDuration(bestSlot.end - bestSlot.start)})
+                </>
+              ) : (
+                "No hay horas libres en común en los días que se ven."
+              )}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {mode === "day" ? (
@@ -346,7 +370,7 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
             days={days}
             courses={gridCourses}
             freeSlots={freeSlots}
-            crowded={shown === "both"}
+            crowded={both}
             focusKey={null}
             now={now}
             readOnly
@@ -375,5 +399,45 @@ export function SharedScheduleView({ shareId, name, courses }: SharedScheduleVie
         </p>
       </Modal>
     </div>
+  )
+}
+
+interface LayerChipProps {
+  label: string
+  on: boolean
+  color: string
+  /** The colored dot works as the legend only while both schedules share the grid. */
+  legend: boolean
+  /** The last visible layer cannot be switched off. */
+  locked?: boolean
+  disabled?: boolean
+  disabledReason?: string
+  onToggle: () => void
+}
+
+/** A schedule shown on the grid, switched on and off like a calendar in a calendar app. */
+function LayerChip({ label, on, color, legend, locked, disabled, disabledReason, onToggle }: LayerChipProps) {
+  return (
+    <button
+      type="button"
+      aria-pressed={on}
+      aria-disabled={locked || undefined}
+      disabled={disabled}
+      title={disabled ? disabledReason : locked ? "Siempre se ve al menos un horario" : undefined}
+      onClick={onToggle}
+      className={cn(
+        "inline-flex h-11 items-center gap-2 rounded-full border px-3.5 text-sm transition-[background-color,border-color,color,scale] duration-150 active:scale-[0.96] roomy:h-9 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+        on ? "border-sky/50 bg-accent font-medium text-foreground" : "border-input bg-background text-muted-foreground",
+        disabled && "cursor-not-allowed opacity-50 active:scale-100",
+      )}
+    >
+      <span
+        aria-hidden
+        className="size-2.5 shrink-0 rounded-full border"
+        style={legend ? { backgroundColor: color, borderColor: color } : { borderColor: "currentColor" }}
+      />
+      {label}
+      {on ? <Check aria-hidden className="size-3.5 text-sky" /> : null}
+    </button>
   )
 }
