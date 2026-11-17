@@ -8,6 +8,8 @@ interface SegmentedOption<T extends string> {
   /** Shorter label for narrow screens. */
   shortLabel?: string
   disabled?: boolean
+  /** Shown as a tooltip while the option is disabled. */
+  disabledReason?: string
 }
 
 interface SegmentedProps<T extends string> {
@@ -40,7 +42,7 @@ export function Segmented<T extends string>({
             type="button"
             aria-pressed={active}
             disabled={option.disabled}
-            title={option.disabled ? "Hay ramos en fin de semana" : undefined}
+            title={option.disabled ? option.disabledReason : undefined}
             onClick={() => onChange(option.value)}
             className={cn(
               "h-7 rounded-md px-3 text-[13px] whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",

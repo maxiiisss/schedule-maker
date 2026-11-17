@@ -185,6 +185,40 @@
 .menu-panel[data-state="open"] > :nth-child(5) { animation-delay: 160ms; }
 .menu-panel[data-state="open"] > :nth-child(n + 6) { animation-delay: 190ms; }
 
+/* Menus that open upwards from a bottom bar on phones: they grow out of the bottom edge instead. */
+@keyframes menu-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+}
+@keyframes menu-out-up {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+@keyframes menu-item-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+}
+@media (max-width: 639px), (max-height: 500px) and (max-width: 1000px) {
+  .menu-panel[data-up] {
+    transform-origin: bottom right;
+  }
+  .menu-panel[data-up][data-state="open"] {
+    animation-name: menu-in-up;
+  }
+  .menu-panel[data-up][data-state="closed"] {
+    animation-name: menu-out-up;
+  }
+  .menu-panel[data-up][data-state="open"] > * {
+    animation-name: menu-item-in-up;
+  }
+}
+
 /* iOS Safari zooms into any field smaller than 16 px when it gets focus. Phones only. */
 @media (max-width: 639px), (max-height: 500px) and (max-width: 1000px) {
   input:not([type="checkbox"]):not([type="radio"]),

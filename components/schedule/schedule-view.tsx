@@ -19,11 +19,13 @@ import { CompareDialog, type AddLinkResult } from "@/components/compare/compare-
 import { SharePanel } from "@/components/share/share-panel"
 import { Button } from "@/components/ui/button"
 import { useNow } from "@/hooks/use-now"
+import { useHistory } from "@/hooks/use-history"
 import { usePeople } from "@/hooks/use-people"
 import { useSchedule } from "@/hooks/use-schedule"
 import { useViewState } from "@/hooks/use-view-state"
 import { cn } from "@/lib/utils"
 import { bestFreeSlot, buildComparison, commonFreeSlots, MAX_PEOPLE } from "@/lib/schedule/compare"
+import type { HistoryEntry } from "@/lib/schedule/history"
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { getCourseGroups } from "@/lib/schedule/courses"
 import { dayIdFromDate, hasWeekendCourses, weekViewDays } from "@/lib/schedule/days"
@@ -36,6 +38,7 @@ import { Modal } from "./modal"
 import { MenuIcon } from "./menu-icon"
 import { MenuChoice, MenuItem, MenuSeparator, PopoverMenu } from "./popover-menu"
 import { ScheduleGrid, type NowMarker } from "./schedule-grid"
+import { SwipeDays } from "./swipe-days"
 import { CourseChips, Logo, ScheduleSidebar } from "./schedule-sidebar"
 import { Segmented } from "./segmented"
 import { SkipLink } from "./skip-link"
@@ -98,6 +101,7 @@ export function ScheduleView() {
     remove: removePerson,
     restore: restorePeople,
   } = usePeople()
+  const { history, forget: forgetHistory, clear: clearHistory } = useHistory()
 
   const showToast = useCallback((message: string, undo?: () => void) => {
     window.clearTimeout(toastTimer.current)
@@ -320,6 +324,20 @@ export function ScheduleView() {
     return { ok: true, message: `Se agregó «${added.person.name}». Puedes cambiarle el nombre abajo.` }
   }
 
+  const restoreFromHistory = (entry: HistoryEntry): AddLinkResult => {
+    const added = addPerson({ name: entry.name, courses: entry.courses, sourceId: entry.sourceId })
+    if (!added.ok) {
+      return {
+        ok: false,
+        message:
+          added.reason === "duplicate"
+            ? "Ya agregaste este horario."
+            : `Puedes comparar hasta ${MAX_PEOPLE} horarios a la vez. Quita uno para agregar otro.`,
+      }
+    }
+    return { ok: true, message: `Se agregó «${added.person.name}» desde el historial.` }
+  }
+
   const handleRemovePerson = (id: string) => {
     const person = people.find((item) => item.id === id)
     if (!person) return
@@ -461,7 +479,7 @@ export function ScheduleView() {
                   value={includeWeekend || weekendLocked ? "full" : "work"}
                   onChange={(value) => setIncludeWeekend(value === "full")}
                   options={[
-                    { value: "work", label: "Lun a Vie", disabled: weekendLocked },
+                    { value: "work", label: "Lun a Vie", disabled: weekendLocked, disabledReason: "Hay ramos en fin de semana" },
                     { value: "full", label: "Lun a Dom" },
                   ]}
                 />
@@ -558,17 +576,19 @@ export function ScheduleView() {
           ) : null}
 
           <div id="horario" tabIndex={-1} className="relative outline-none">
-            <ScheduleGrid
-              days={days}
-              courses={gridCourses}
-              freeSlots={freeSlots}
-              crowded={comparing}
-              focusKey={focusKey}
-              now={now}
-              onEditCourse={openEdit}
-              onDeleteCourse={handleDelete}
-              gridRef={gridRef}
-            />
+            <SwipeDays day={selectedDay} onChange={setSelectedDay} enabled={mode === "day"}>
+              <ScheduleGrid
+                days={days}
+                courses={gridCourses}
+                freeSlots={freeSlots}
+                crowded={comparing}
+                focusKey={focusKey}
+                now={now}
+                onEditCourse={openEdit}
+                onDeleteCourse={handleDelete}
+                gridRef={gridRef}
+              />
+            </SwipeDays>
             {ready && courses.length === 0 ? (
               <div className="absolute inset-x-3 top-16 z-20 sm:inset-x-8">
                 <EmptyState onAdd={openCreate} />
@@ -643,10 +663,14 @@ export function ScheduleView() {
         open={compareOpen}
         onClose={() => setCompareOpen(false)}
         people={people}
+        history={history}
         onAddLink={addFromLink}
         onRename={renamePerson}
         onToggle={togglePerson}
         onRemove={handleRemovePerson}
+        onRestoreFromHistory={restoreFromHistory}
+        onForgetHistory={forgetHistory}
+        onClearHistory={clearHistory}
       />
 
       <Modal
