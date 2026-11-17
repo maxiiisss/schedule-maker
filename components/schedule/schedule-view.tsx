@@ -454,7 +454,7 @@ export function ScheduleView() {
               <div className="hidden min-w-0 min-[480px]:block">
                 <p className="truncate text-[15px] font-semibold leading-tight tracking-tight">
                   <span className="lg:hidden">Sin Topes</span>
-                  <span className="hidden lg:inline">{comparing ? "Comparando horarios" : "Mi horario"}</span>
+                  <span className="hidden lg:inline">Mi horario</span>
                 </p>
                 <p className="truncate text-xs text-muted-foreground">
                   {courseGroups.length === 0

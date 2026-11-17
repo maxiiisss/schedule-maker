@@ -15,6 +15,10 @@ import {
 import { DAY_BY_ID } from "@/lib/schedule/constants"
 import { formatDuration } from "@/lib/schedule/time"
 
+/** The way out of, and back into, a comparison: the one action in the bar that matters most. */
+const PRIMARY =
+  "h-11 border-sky/40 bg-sky/10 px-3.5 text-sky hover:bg-sky/20 hover:text-sky roomy:h-9"
+
 interface CompareBarProps {
   people: Person[]
   showFree: boolean
@@ -51,20 +55,20 @@ export function CompareBar({
     return (
       <section
         aria-label="Comparación de horarios"
-        className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border bg-card px-3.5 py-2.5"
+        className="flex flex-col gap-2.5 rounded-xl border border-border bg-card px-3.5 py-3"
       >
-        <p className="min-w-0 flex-1 text-[13px] text-muted-foreground">
-          Estás viendo solo tu horario.{" "}
-          <span className="text-foreground">
-            {people.length === 1 ? "Tienes 1 horario guardado" : `Tienes ${people.length} horarios guardados`}
-          </span>{" "}
-          para comparar.
+        <p className="text-[13px] text-muted-foreground">
+          <span className="font-semibold text-foreground">Solo tu horario.</span>{" "}
+          {people.length === 1 ? "Tienes 1 horario guardado" : `Tienes ${people.length} horarios guardados`} para
+          comparar.
         </p>
-        <Button variant="outline" onClick={onShowAll} className="h-11 px-3.5 roomy:h-9">
-          <Users className="size-4" />
-          Comparar de nuevo
-        </Button>
-        {onManage ? <ManageButton onManage={onManage} /> : null}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={onShowAll} className={cn(PRIMARY, "flex-1 roomy:flex-none")}>
+            <Users className="size-4" />
+            Comparar de nuevo
+          </Button>
+          {onManage ? <ManageButton onManage={onManage} /> : null}
+        </div>
       </section>
     )
   }
@@ -78,12 +82,20 @@ export function CompareBar({
     >
       <p className="text-[13px] text-muted-foreground">
         <span className="font-semibold text-foreground">Comparando</span> tu horario con{" "}
-        <span className="font-medium text-foreground">{names}</span>
+        <span className="font-medium text-foreground">{names}</span>. Cada color es una persona, no un ramo.
       </p>
 
       <ul aria-label="Horarios en la grilla" className="flex flex-wrap items-center gap-2">
         <li>
-          <Chip label={OWN_LABEL} color={resolveColor(PERSON_COLOR_IDS[0]).hex} on locked />
+          <span className="inline-flex h-11 items-center gap-2 rounded-full border border-input bg-background px-3.5 text-sm font-medium roomy:h-9">
+            <span
+              aria-hidden
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: resolveColor(PERSON_COLOR_IDS[0]).hex }}
+            />
+            {OWN_LABEL}
+            <span className="sr-only"> (tu horario, siempre visible)</span>
+          </span>
         </li>
         {people.map((person) => (
           <li key={person.id}>
@@ -98,7 +110,7 @@ export function CompareBar({
       </ul>
 
       <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={onHideAll} className="h-11 flex-1 px-3.5 roomy:h-9 roomy:flex-none">
+        <Button variant="outline" onClick={onHideAll} className={cn(PRIMARY, "flex-1 roomy:flex-none")}>
           Volver a mi horario
         </Button>
         {onManage ? <ManageButton onManage={onManage} /> : null}
@@ -168,23 +180,19 @@ interface ChipProps {
   label: string
   color: string
   on: boolean
-  locked?: boolean
-  onToggle?: () => void
+  onToggle: () => void
 }
 
 /** A schedule on the grid: its color, and a switch to show or hide it. */
-function Chip({ label, color, on, locked, onToggle }: ChipProps) {
+function Chip({ label, color, on, onToggle }: ChipProps) {
   return (
     <button
       type="button"
       aria-pressed={on}
-      aria-disabled={locked || undefined}
-      title={locked ? "Tu horario siempre se ve" : undefined}
-      onClick={locked ? undefined : onToggle}
+      onClick={onToggle}
       className={cn(
         "inline-flex h-11 items-center gap-2 rounded-full border px-3.5 text-sm transition-[background-color,border-color,color,scale] duration-150 active:scale-[0.96] roomy:h-9 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
         on ? "border-sky/50 bg-accent font-medium text-foreground" : "border-input bg-background text-muted-foreground",
-        locked && "cursor-default active:scale-100",
       )}
     >
       <span
